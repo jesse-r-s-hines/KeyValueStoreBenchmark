@@ -1,0 +1,21 @@
+cmake_minimum_required(VERSION 3.18)
+project(benchmark)
+
+find_package(unofficial-sqlite3 CONFIG REQUIRED)
+find_package(RocksDB REQUIRED)
+find_package(leveldb REQUIRED)
+
+# add the executable
+add_executable(benchmark main.cpp)
+set_property(TARGET benchmark PROPERTY CXX_STANDARD 17)
+
+target_link_libraries(benchmark
+    PRIVATE
+        unofficial::sqlite3::sqlite3
+        RocksDB::rocksdb
+        leveldb::leveldb
+        ${CMAKE_BINARY_DIR}/berkeleydb/lib/libdb_cxx.a
+        ${CMAKE_BINARY_DIR}/berkeleydb/lib/libdb_stl.a
+)
+
+target_include_directories(benchmark PRIVATE build)
