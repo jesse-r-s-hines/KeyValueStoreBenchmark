@@ -13,7 +13,7 @@ else
 fi
 
 ./vcpkg/vcpkg install \
-    sqlite3 \
+    sqlitecpp \
     rocksdb[lz4] \
     leveldb \
 

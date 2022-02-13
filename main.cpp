@@ -1,18 +1,29 @@
 #include <iostream>
 #include <filesystem>
 
-#include <sqlite3.h>
+#include <SQLiteCpp/SQLiteCpp.h>
 #include "rocksdb/db.h"
 #include "leveldb/db.h"
-#include <berkeleydb/include/db_cxx.h>
+#include "berkeleydb/include/db_cxx.h"
 
-void run_sqlite3() {
-    std::cout << "Sqlite version: " << sqlite3_libversion() << std::endl;
+#include "dbwrappers.cpp"
 
-    sqlite3* mydb;
-    sqlite3_open("dbs/sqlite3.db", &mydb);
-    std::cout << "Database file: " << mydb << std::endl;
-    sqlite3_close(mydb);
+using std::exception, std::runtime_error, std::string;
+
+void test_sqlite3() {
+    dbwrappers::SQLiteWrapper db("dbs/sqlite3.db");
+
+    db.insert("key", "hello");
+    db.update("key", "hello world");
+    std::cout << db.get("key") << "\n";
+    db.remove("key");
+
+    try {
+        db.get("key");
+        std::cout << "key DID NOT get deleted\n";
+    } catch (...) {
+        std::cout << "key deleted\n";
+    }
 }
 
 void run_rocksdb() {
@@ -52,11 +63,11 @@ int main() {
     std::filesystem::remove_all("dbs");
     std::filesystem::create_directory("dbs");
 
-    run_sqlite3();
-    std::cout << std::endl;
-    run_rocksdb();
-    std::cout << std::endl;
-    run_leveldb();
-    std::cout << std::endl;
-    run_berkeleydb();
+    test_sqlite3();
+    // std::cout << std::endl;
+    // run_rocksdb();
+    // std::cout << std::endl;
+    // run_leveldb();
+    // std::cout << std::endl;
+    // run_berkeleydb();
 }
