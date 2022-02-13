@@ -209,4 +209,52 @@ namespace dbwrappers {
             checkStatus(s);
         }
     };
+
+    class RocksDBWrapper : public DBWrapper {
+        rocksdb::DB* db;
+
+        void checkStatus(rocksdb::Status status) {
+            if (!status.ok()) {
+                throw std::runtime_error(status.ToString());
+            }
+        }
+
+    public:
+        RocksDBWrapper(const string& filename) {
+            rocksdb::Options options;
+            options.create_if_missing = true;
+            
+            rocksdb::Status status = rocksdb::DB::Open(options, filename, &db);
+            checkStatus(status);
+        }
+
+        ~RocksDBWrapper() {
+            delete db;
+        }
+
+        string type() override { return "rocksdb"; }
+
+
+        void insert(const string& key, const string& value) override {
+           rocksdb::Status s = db->Put(rocksdb::WriteOptions(), key, value);
+           checkStatus(s);
+        }
+
+        void update(const string& key, const string& value) override {
+            rocksdb::Status s = db->Put(rocksdb::WriteOptions(), key, value);
+            checkStatus(s);
+        }
+
+        string get(const string& key) override {
+            std::string value;
+            rocksdb::Status s = db->Get(rocksdb::ReadOptions(), key, &value);
+            checkStatus(s);
+            return value;
+        }
+
+        void remove(const string& key) override {
+            rocksdb::Status s = db->Delete(rocksdb::WriteOptions(), key);
+            checkStatus(s);
+        }
+    };
 }

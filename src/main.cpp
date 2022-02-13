@@ -24,10 +24,10 @@ string randBlob(size_t size) {
 }
 
 void testDB(dbwrappers::DBWrapper& db) {
-    std::cout << "Database type: " << db.type() << std::endl;
+    std::cout << "Database: " << db.type() << std::endl;
     db.insert("messsage", randBlob(10));
     db.update("messsage", "hello world");
-    std::cout << "key: messsage, value: " << db.get("messsage") << std::endl;;
+    std::cout << "key: messsage value: " << db.get("messsage") << std::endl;;
     db.remove("messsage");
 
     try {
@@ -69,9 +69,12 @@ int main() {
 
     dbwrappers::SQLiteWrapper sqliteDB("dbs/sqlite3.db");
     testDB(sqliteDB);
+
     dbwrappers::LevelDBWrapper leveldbDB("dbs/leveldb.db");
     testDB(leveldbDB);
 
+    dbwrappers::RocksDBWrapper rocksdbDB("dbs/rocksdb.db");
+    testDB(rocksdbDB);
     // std::cout << std::endl;
     // run_rocksdb();
     // std::cout << std::endl;
