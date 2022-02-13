@@ -12,15 +12,15 @@ namespace dbwrappers {
     /**
      * Abstract base class for the other DB wrappers.
      * 
-     * Can insert, update, get, and remove string keys and blob values.
+     * Can insert, update, get, and remove string keys and values.
      */
     class DBWrapper {
     public:
         virtual ~DBWrapper() {}
 
-        virtual void insert(const string& key, const char* value) = 0;
-        virtual void update(const string& key, const char* value) = 0;
-        virtual const char* get(const string& key) = 0;
+        virtual void insert(const string& key, const string& value) = 0;
+        virtual void update(const string& key, const string& value) = 0;
+        virtual string get(const string& key) = 0;
         virtual void remove(const string& key) = 0;
     };
 
@@ -50,29 +50,28 @@ namespace dbwrappers {
             removeStmt.emplace(db, "DELETE FROM data WHERE key = ?");
         }
 
-        void insert(const string& key, const char* value) override {
+        void insert(const string& key, const string& value) override {
             SQLite::bind(insertStmt.value(), key, value);
             insertStmt.value().exec();
             insertStmt.value().reset();
         }
 
-        void update(const string& key, const char* value) override {
+        void update(const string& key, const string& value) override {
             SQLite::bind(updateStmt.value(), value, key);
             updateStmt.value().exec();
             updateStmt.value().reset();
         }
 
-        /**
-         * Note that the returned pointer is only valid while the SQLiteWrapper object is in scope, and you haven't
-         * called `get` again. (If this was actual code we'd copy it and return std::string but for benchmarking we'll
-         * do the run around to avoid that extra copy of a potentially large blob)
-         */
-        const char* get(const string& key) override {
-            getStmt.value().reset(); // reset at beginning to keep const char* alive.
+        string get(const string& key) override {
             SQLite::bind(getStmt.value(), key);
             getStmt.value().executeStep(); // only one result
 
-            const char* value = getStmt.value().getColumn(0).getText();
+            // Note: This is doing a copy of the blob. the returned char* becomes invalid after calling `reset` so
+            // we can't really avoid the copy? For benchmarking purposes we could potentially return a string_view or 
+            // something and just note the pointer becomes invalid after next call to get. Should probably use string_view
+            // everywhere to avoid copies? Though reference already should avoid copy unless I'm passing char*
+            const string& value = getStmt.value().getColumn(0).getText();
+            getStmt.value().reset();
             return value;
         }
 
@@ -124,7 +123,7 @@ namespace dbwrappers {
             sqlite3_finalize(this->removeStmt);
         }
 
-        void insert(string key, string value) override {
+        void insert(string key, const string& value) override {
             // SQLITE_STATIC means that std::string is responsible for the memory of key and value
             sqlite3_bind_text(this->insertStmt, 1, key.c_str(), key.length(), SQLITE_STATIC);
             sqlite3_bind_blob(this->insertStmt, 2, value.c_str(), value.length(), SQLITE_STATIC);
@@ -133,7 +132,7 @@ namespace dbwrappers {
             sqlite3_reset(this->insertStmt);
         }
 
-        void update(string key, string value) override {
+        void update(string key, const string& value) override {
             sqlite3_bind_text(this->updateStmt, 2, key.c_str(), key.length(), SQLITE_STATIC);
             sqlite3_bind_blob(this->updateStmt, 1, value.c_str(), value.length(), SQLITE_STATIC);
 
