@@ -18,6 +18,9 @@ namespace dbwrappers {
     public:
         virtual ~DBWrapper() {}
 
+        /** Returns the name of the underlying database */
+        virtual string type() = 0;
+
         virtual void insert(const string& key, const string& value) = 0;
         virtual void update(const string& key, const string& value) = 0;
         virtual string get(const string& key) = 0;
@@ -49,6 +52,8 @@ namespace dbwrappers {
             getStmt.emplace(db, "SELECT value FROM data WHERE key = ?");
             removeStmt.emplace(db, "DELETE FROM data WHERE key = ?");
         }
+
+        string type() override { return "sqlite3"; }
 
         void insert(const string& key, const string& value) override {
             SQLite::bind(insertStmt.value(), key, value);
@@ -156,4 +161,52 @@ namespace dbwrappers {
         }
     };
     */
+
+    class LevelDBWrapper : public DBWrapper {
+        leveldb::DB* db;
+
+        void checkStatus(leveldb::Status status) {
+            if (!status.ok()) {
+                throw std::runtime_error(status.ToString());
+            }
+        }
+
+    public:
+        LevelDBWrapper(const string& filename) {
+            leveldb::Options options;
+            options.create_if_missing = true;
+            
+            leveldb::Status status = leveldb::DB::Open(options, filename, &db);
+            checkStatus(status);
+        }
+
+        ~LevelDBWrapper() {
+            delete db;
+        }
+
+        string type() override { return "leveldb"; }
+
+
+        void insert(const string& key, const string& value) override {
+           leveldb::Status s = db->Put(leveldb::WriteOptions(), key, value);
+           checkStatus(s);
+        }
+
+        void update(const string& key, const string& value) override {
+            leveldb::Status s = db->Put(leveldb::WriteOptions(), key, value);
+            checkStatus(s);
+        }
+
+        string get(const string& key) override {
+            std::string value;
+            leveldb::Status s = db->Get(leveldb::ReadOptions(), key, &value);
+            checkStatus(s);
+            return value;
+        }
+
+        void remove(const string& key) override {
+            leveldb::Status s = db->Delete(leveldb::WriteOptions(), key);
+            checkStatus(s);
+        }
+    };
 }

@@ -23,20 +23,20 @@ string randBlob(size_t size) {
     return blob;
 }
 
-void testSqlite() {
-    dbwrappers::SQLiteWrapper db("dbs/sqlite3.db");
-
-    db.insert("key", randBlob(10));
-    db.update("key", "hello world");
-    std::cout << db.get("key") << "\n";
-    db.remove("key");
+void testDB(dbwrappers::DBWrapper& db) {
+    std::cout << "Database type: " << db.type() << std::endl;
+    db.insert("messsage", randBlob(10));
+    db.update("messsage", "hello world");
+    std::cout << "key: messsage, value: " << db.get("messsage") << std::endl;;
+    db.remove("messsage");
 
     try {
-        db.get("key");
-        std::cout << "key DID NOT get deleted\n";
+        db.get("messsage");
+        std::cout << "messsage DID NOT get deleted" << std::endl;
     } catch (...) {
-        std::cout << "key deleted\n";
+        std::cout << "messsage deleted" << std::endl;
     }
+    std::cout << std::endl;
 }
 
 // void run_rocksdb() {
@@ -52,16 +52,7 @@ void testSqlite() {
 //     // status = db->Put(rocksdb::WriteOptions(), "key", "value");
 // }
 
-// void run_leveldb() {
-//     leveldb::DB* db;
-//     std::cout << "leveldb version: " << leveldb::kMajorVersion << "." << leveldb::kMinorVersion << std::endl;
 
-//     leveldb::Options options;
-//     options.create_if_missing = true;
-
-//     leveldb::Status status = leveldb::DB::Open(options, "dbs/leveldb.db", &db);
-//     std::cout << "leveldb status: " << (status.ok()) << std::endl;
-// }
 
 // void run_berkeleydb() {
 //     std::cout << "Berkeley version: " << DB_VERSION_STRING << std::endl;
@@ -76,7 +67,11 @@ int main() {
     std::filesystem::remove_all("dbs");
     std::filesystem::create_directory("dbs");
 
-    testSqlite();
+    dbwrappers::SQLiteWrapper sqliteDB("dbs/sqlite3.db");
+    testDB(sqliteDB);
+    dbwrappers::LevelDBWrapper leveldbDB("dbs/leveldb.db");
+    testDB(leveldbDB);
+
     // std::cout << std::endl;
     // run_rocksdb();
     // std::cout << std::endl;
