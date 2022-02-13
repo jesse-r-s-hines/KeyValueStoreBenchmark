@@ -6,7 +6,7 @@ find_package(RocksDB REQUIRED)
 find_package(leveldb REQUIRED)
 
 # add the executable
-add_executable(benchmark main.cpp)
+add_executable(benchmark src/main.cpp)
 set_property(TARGET benchmark PROPERTY CXX_STANDARD 17)
 
 target_link_libraries(benchmark
