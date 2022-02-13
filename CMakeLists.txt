@@ -8,6 +8,8 @@ find_package(leveldb REQUIRED)
 # add the executable
 add_executable(benchmark src/main.cpp)
 set_property(TARGET benchmark PROPERTY CXX_STANDARD 17)
+# GCC specific
+target_compile_options(benchmark PRIVATE -Wall -Wextra -pedantic -O2)
 
 target_link_libraries(benchmark
     PRIVATE
