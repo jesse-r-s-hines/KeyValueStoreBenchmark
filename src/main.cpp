@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <filesystem>
 #include <random>
 #include <memory>
@@ -117,5 +118,8 @@ int main(int argc, char** argv) {
 
     BenchmarkData data = runBenchmark();
 
-    std::cout << benchmarkToJson(data) << std::endl;
+    std::ofstream output;
+    output.open("out/benchmark.json");
+    output << benchmarkToJson(data);
+    output.close();
 }
