@@ -255,4 +255,62 @@ namespace dbwrappers {
             checkStatus(s);
         }
     };
+
+    /**
+     * See https://docs.oracle.com/cd/E17076_05/html/gsg/CXX/BerkeleyDB-Core-Cxx-GSG.pdf and
+     * https://docs.oracle.com/database/bdb181/html/api_reference/CXX/frame_main.html for docs
+     */
+    class BerkeleyDBWraper : public DBWrapper {
+        Db db;
+
+        static Dbt makeDbt(const string& str) {
+            // we don't include the null terminator. We're also casting away const...
+            return Dbt((void *) str.c_str(), str.size()); 
+        }
+
+        void checkStatus(int status) {
+            if (status != 0) {
+                throw std::runtime_error(std::to_string(status));
+            }
+        }
+
+    public:
+        BerkeleyDBWraper(const string& filename) : db(NULL, 0) {
+            int s = db.open(NULL, filename.c_str(), NULL, DB_BTREE, DB_CREATE, 0);
+            checkStatus(s);
+        }
+
+        ~BerkeleyDBWraper() {
+            int s = db.close(0);
+            checkStatus(s);
+        }
+
+        string type() override { return "berkeleydb"; }
+
+
+        void insert(const string& key, const string& value) override {
+            Dbt keyDbt = makeDbt(key);
+            Dbt valueDbt((void *) value.c_str(), value.size());
+            int s = db.put(NULL, &keyDbt, &valueDbt, 0);
+            checkStatus(s);
+        }
+
+        void update(const string& key, const string& value) override {
+            insert(key, value);
+        }
+
+        string get(const string& key) override {
+            Dbt keyDbt = makeDbt(key);
+            Dbt valueDbt;
+            int s = db.get(NULL, &keyDbt, &valueDbt, 0);
+            checkStatus(s);
+            // Note: this is a copy. See the SQLite get as well.
+            return string((char*) valueDbt.get_data(), valueDbt.get_size());
+        }
+
+        void remove(const string& key) override {
+            Dbt keyDbt = makeDbt(key);
+            db.del(NULL, &keyDbt, 0);
+        }
+    };
 }
