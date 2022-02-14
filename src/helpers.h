@@ -5,6 +5,8 @@
 #include<iostream>
 
 namespace helpers {
+    namespace chrono = chrono;
+
     std::random_device randomDevice;
     std::mt19937 randGen(randomDevice());
 
@@ -34,11 +36,11 @@ namespace helpers {
         return blob;
     }
 
-    std::chrono::nanoseconds timeIt(std::function<void()> func) {
-        auto start = std::chrono::steady_clock::now();
+    chrono::nanoseconds timeIt(std::function<void()> func) {
+        auto start = chrono::steady_clock::now();
         func();
-        auto stop = std::chrono::steady_clock::now();
-        return std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start);
+        auto stop = chrono::steady_clock::now();
+        return chrono::duration_cast chrono::nanoseconds>(stop - start);
     }
 }
 
