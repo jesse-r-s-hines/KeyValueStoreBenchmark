@@ -3,7 +3,7 @@
 #include <random>
 #include <memory>
 
-#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#define DOCTEST_CONFIG_IMPLEMENT
 #include "doctest/doctest.h"
 
 #include "dbwrappers.cpp"
@@ -63,4 +63,12 @@ TEST_CASE("Test DBWrappers") {
             REQUIRE(db->get("key") == "\0goodbye\0"s);
         }
     }
+}
+
+int main(int argc, char** argv) {
+    doctest::Context context;
+    context.setOption("minimal", true); // only show if errors occur.
+    context.applyCommandLine(argc, argv);
+    int res = context.run();
+    if(context.shouldExit()) return res;
 }
