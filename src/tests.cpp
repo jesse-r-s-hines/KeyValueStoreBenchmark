@@ -12,14 +12,14 @@ namespace tests {
     using namespace std::string_literals;
 
     TEST_CASE("Test DBWrappers") {
-        std::filesystem::remove_all("dbs/tests");
-        std::filesystem::create_directories("dbs/tests/");
+        std::filesystem::remove_all("out/tests");
+        std::filesystem::create_directories("out/tests/");
 
         vector<unique_ptr<dbwrappers::DBWrapper>> dbs{}; // can't use initializer list with unique_ptr for some reason
-        dbs.push_back(make_unique<dbwrappers::SQLiteWrapper>("dbs/tests/sqlite3.db"));
-        dbs.push_back(make_unique<dbwrappers::LevelDBWrapper>("dbs/tests/leveldb.db"));
-        dbs.push_back(make_unique<dbwrappers::RocksDBWrapper>("dbs/tests/rocksdb.db"));
-        dbs.push_back(make_unique<dbwrappers::BerkeleyDBWrapper>("dbs/tests/berkleydb.db"));
+        dbs.push_back(make_unique<dbwrappers::SQLiteWrapper>("out/tests/sqlite3.db"));
+        dbs.push_back(make_unique<dbwrappers::LevelDBWrapper>("out/tests/leveldb.db"));
+        dbs.push_back(make_unique<dbwrappers::RocksDBWrapper>("out/tests/rocksdb.db"));
+        dbs.push_back(make_unique<dbwrappers::BerkeleyDBWrapper>("out/tests/berkleydb.db"));
 
         SUBCASE("Basic") {
             for (auto& db : dbs) {

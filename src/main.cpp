@@ -69,14 +69,14 @@ json::object benchmarkToJson(BenchmarkData data) {
 }
 
 BenchmarkData runBenchmark() {
-    std::filesystem::remove_all("dbs");
-    std::filesystem::create_directories("dbs");
+    std::filesystem::remove_all("out/dbs");
+    std::filesystem::create_directories("out/dbs");
 
     vector<unique_ptr<dbwrappers::DBWrapper>> dbs{}; // can't use initializer list with unique_ptr for some reason
-    dbs.push_back(make_unique<dbwrappers::SQLiteWrapper>("dbs/sqlite3.db"));
-    dbs.push_back(make_unique<dbwrappers::LevelDBWrapper>("dbs/leveldb.db"));
-    dbs.push_back(make_unique<dbwrappers::RocksDBWrapper>("dbs/rocksdb.db"));
-    dbs.push_back(make_unique<dbwrappers::BerkeleyDBWrapper>("dbs/berkleydb.db"));
+    dbs.push_back(make_unique<dbwrappers::SQLiteWrapper>("out/dbs/sqlite3.db"));
+    dbs.push_back(make_unique<dbwrappers::LevelDBWrapper>("out/dbs/leveldb.db"));
+    dbs.push_back(make_unique<dbwrappers::RocksDBWrapper>("out/dbs/rocksdb.db"));
+    dbs.push_back(make_unique<dbwrappers::BerkeleyDBWrapper>("out/dbs/berkleydb.db"));
 
     BenchmarkData data;
 
@@ -106,7 +106,6 @@ BenchmarkData runBenchmark() {
 
     return data;
 }
-
 
 
 int main(int argc, char** argv) {

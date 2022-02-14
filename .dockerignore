@@ -1,7 +1,7 @@
 Dockerfile
 .git/
 **/build/*
-**/dbs/*
+**/out/*
 vcpkg
 
 # Created by https://www.toptal.com/developers/gitignore/api/c++,cmake,vcpkg
