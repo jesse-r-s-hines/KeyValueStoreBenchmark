@@ -1,5 +1,5 @@
 #!/bin/bash
-PROJ_ROOT="$(realpath $(dirname "$0"))"
+PROJ_ROOT="$(realpath $(dirname $(dirname "$0")))"
 cd "$PROJ_ROOT"
 set -e
 

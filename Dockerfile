@@ -9,11 +9,11 @@ RUN apt-get install -y build-essential libssl-dev cmake git
 
 WORKDIR /benchmark
 
-COPY ./install_dependencies.sh install_dependencies.sh
-RUN ./install_dependencies.sh
+COPY ./scripts/installDependencies.sh ./scripts/installDependencies.sh
+RUN ./scripts/installDependencies.sh
 
 COPY . .
-RUN ./build.sh
+RUN ./scripts/build.sh
 
 
 FROM base as benchmark
