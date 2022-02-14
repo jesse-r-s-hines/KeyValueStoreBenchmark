@@ -1,7 +1,7 @@
 #!/bin/bash
 cd "$(dirname $(dirname "$0"))"
 
-./scripts/install_dependencies.sh
+./scripts/installDependencies.sh
 
 mkdir -p build
 cd build
