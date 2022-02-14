@@ -23,3 +23,4 @@ target_link_libraries(benchmark
 )
 
 target_include_directories(benchmark PRIVATE build)
+target_include_directories(benchmark PRIVATE src)
