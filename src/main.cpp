@@ -10,6 +10,7 @@
 
 using std::unique_ptr, std::make_unique, std::exception, std::runtime_error,
       std::vector, std::array, std::string, std::size_t;
+using namespace std::string_literals;
 
 // std::random_device rd;
 // std::mt19937 randGen(rd());
@@ -24,42 +25,42 @@ using std::unique_ptr, std::make_unique, std::exception, std::runtime_error,
 // }
 
 
-
 TEST_CASE("Test DBWrappers") {
+    std::filesystem::remove_all("dbs/tests");
+    std::filesystem::create_directories("dbs/tests/");
 
-    array<unique_ptr<dbwrappers::DBWrapper>, 4> dbs{
-        make_unique<dbwrappers::SQLiteWrapper>("dbs/sqlite3.db"),
-        make_unique<dbwrappers::LevelDBWrapper>("dbs/leveldb.db"),
-        make_unique<dbwrappers::RocksDBWrapper>("dbs/rocksdb.db"),
-        make_unique<dbwrappers::BerkeleyDBWraper>("dbs/berkleydb.db"),
+    array<unique_ptr<dbwrappers::DBWrapper>, 1> dbs{
+        make_unique<dbwrappers::SQLiteWrapper>("dbs/tests/sqlite3.db"),
+        // make_unique<dbwrappers::LevelDBWrapper>("dbs/tests/leveldb.db"),
+        // make_unique<dbwrappers::RocksDBWrapper>("dbs/tests/rocksdb.db"),
+        // make_unique<dbwrappers::BerkeleyDBWraper>("dbs/tests/berkleydb.db"),
     };
 
-    for (auto& db : dbs) {
-        db->insert("key", "value");
-        CHECK(db->get("key") == "value");
+    SUBCASE("Basic") {
+        for (auto& db : dbs) {
+            INFO(db->type());
 
-        db->update("key", "updated");
-        CHECK(db->get("key") == "updated");
+            db->insert("key", "value");
+            REQUIRE(db->get("key") == "value");
 
-        db->remove("key");
+            db->update("key", "updated");
+            REQUIRE(db->get("key") == "updated");
 
-        CHECK_THROWS(db->get("key"));
+            db->remove("key");
+
+            REQUIRE_THROWS(db->get("key"));
+        }
+    }
+
+    SUBCASE("Nulls") {
+        for (auto& db : dbs) {
+            INFO(db->type());
+
+            db->insert("key", "hello\0world"s);
+            REQUIRE(db->get("key") == "hello\0world"s);
+
+            db->update("key", "\0goodbye\0"s);
+            REQUIRE(db->get("key") == "\0goodbye\0"s);
+        }
     }
 }
-
-// int main() {
-//     std::filesystem::remove_all("dbs");
-//     std::filesystem::create_directory("dbs");
-
-//     dbwrappers::SQLiteWrapper sqliteDB("dbs/sqlite3.db");
-//     testDB(sqliteDB);
-
-//     dbwrappers::LevelDBWrapper leveldbDB("dbs/leveldb.db");
-//     testDB(leveldbDB);
-
-//     dbwrappers::RocksDBWrapper rocksdbDB("dbs/rocksdb.db");
-//     testDB(rocksdbDB);
-
-//     dbwrappers::BerkeleyDBWraper berkleydbDB("dbs/berkleydb.db");
-//     testDB(berkleydbDB);
-// }
