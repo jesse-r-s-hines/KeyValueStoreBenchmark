@@ -5,7 +5,7 @@
 #include<iostream>
 
 namespace helpers {
-    namespace chrono = chrono;
+    namespace chrono = std::chrono;
 
     std::random_device randomDevice;
     std::mt19937 randGen(randomDevice());
@@ -40,7 +40,7 @@ namespace helpers {
         auto start = chrono::steady_clock::now();
         func();
         auto stop = chrono::steady_clock::now();
-        return chrono::duration_cast chrono::nanoseconds>(stop - start);
+        return chrono::duration_cast<chrono::nanoseconds>(stop - start);
     }
 }
 

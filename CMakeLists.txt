@@ -5,6 +5,7 @@ find_package(SQLiteCpp REQUIRED)
 find_package(RocksDB REQUIRED)
 find_package(leveldb REQUIRED)
 find_package(doctest REQUIRED)
+find_package(Boost REQUIRED COMPONENTS json)
 
 # add the executable
 add_executable(benchmark src/main.cpp)

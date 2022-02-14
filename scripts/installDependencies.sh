@@ -16,6 +16,7 @@ fi
     sqlitecpp \
     rocksdb[lz4] \
     leveldb \
+    boost-json \
     doctest \
 
 if [ ! -d "build/berkeleydb" ]; then

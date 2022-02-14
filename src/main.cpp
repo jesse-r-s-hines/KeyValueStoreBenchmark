@@ -8,6 +8,8 @@
 #include <tuple>
 #include <cmath>
 
+#include <boost/json/src.hpp>
+
 #include "dbwrappers.h"
 #include "helpers.h"
 
@@ -16,6 +18,8 @@
 #include "tests.cpp"
 
 using std::vector, std::map, std::tuple, std::string, std::unique_ptr, std::make_unique;
+namespace json = boost::json;
+namespace chrono = std::chrono;
 
 template<typename T>
 class Stats {
@@ -40,18 +44,29 @@ public:
     T avg() { return _sum / _count; }
 };
 
-class BenchmarkData {
-public:
-    map<tuple<string, string>, Stats<long long>> data;
-    void record(string db, string operation, long long value) {
-        data[{db, operation}].record(value);
+
+using BenchmarkData = map<vector<string>, Stats<long long>>;
+
+json::object benchmarkToJson(BenchmarkData data) {
+    json::object root;
+
+    for (auto& [path, stats] : data) {
+        json::object* obj = &root;
+        for (auto& key : path) {
+            if (!obj->contains(key)) {
+                (*obj)[key] = json::object();
+            }
+            obj = &((*obj)[key].as_object());
+        }
+        (*obj)["count"] = stats.count();
+        (*obj)["sum"] = stats.sum();
+        (*obj)["min"] = stats.min();
+        (*obj)["max"] = stats.max();
+        (*obj)["avg"] = stats.avg();
     }
 
-    Stats<long long> get(string db, string operation) {
-        return data[{db, operation}];
-    }
-};
-
+    return root;
+}
 
 BenchmarkData runBenchmark() {
     std::filesystem::remove_all("dbs");
@@ -71,21 +86,21 @@ BenchmarkData runBenchmark() {
             string blob = helpers::randBlob(1024);
 
             auto time = helpers::timeIt([&]() { db->insert(key, blob); });
-            data.record(db->type(), "insert", time.count());
+            data[{db->type(), "insert"}].record(time.count());
 
             blob = helpers::randBlob(1024);
             time = helpers::timeIt([&]() { db->update(key, blob); });
-            data.record(db->type(), "update", time.count());
+            data[{db->type(), "update"}].record(time.count());
 
             string value;
             time = helpers::timeIt([&]() {
                 value = db->get(key);
             });
             if (value.size() == 0) throw std::runtime_error("DB get failed"); // make sure compiler doe
-            data.record(db->type(), "get", time.count());
+            data[{db->type(), "get"}].record(time.count());
 
             time = helpers::timeIt([&]() { db->remove(key); });
-            data.record(db->type(), "remove", time.count());
+            data[{db->type(), "remove"}].record(time.count());
         }
     }
 
@@ -103,9 +118,5 @@ int main(int argc, char** argv) {
 
     BenchmarkData data = runBenchmark();
 
-    for (auto& record : data.data) {
-        std::cout << "[";
-        std::apply([](auto&&... t) { ((std::cout << t << ", "), ...); }, record.first);
-        std::cout << "] : " << record.second.avg() << "ns" << std::endl;
-    }
+    std::cout << benchmarkToJson(data) << std::endl;
 }
