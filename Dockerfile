@@ -10,6 +10,7 @@ RUN apt-get install -y build-essential libssl-dev cmake git
 WORKDIR /benchmark
 
 COPY ./scripts/installDependencies.sh ./scripts/installDependencies.sh
+COPY ./vcpkg_overlay_ports ./vcpkg_overlay_ports
 RUN ./scripts/installDependencies.sh
 
 COPY . .
