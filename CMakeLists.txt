@@ -4,6 +4,7 @@ project(benchmark)
 find_package(SQLiteCpp REQUIRED)
 find_package(RocksDB REQUIRED)
 find_package(leveldb REQUIRED)
+find_package(doctest REQUIRED)
 
 # add the executable
 add_executable(benchmark src/main.cpp)
@@ -18,6 +19,7 @@ target_link_libraries(benchmark
         leveldb::leveldb
         ${CMAKE_BINARY_DIR}/berkeleydb/lib/libdb_cxx.a
         ${CMAKE_BINARY_DIR}/berkeleydb/lib/libdb_stl.a
+        doctest::doctest
 )
 
 target_include_directories(benchmark PRIVATE build)

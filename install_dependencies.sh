@@ -16,6 +16,7 @@ fi
     sqlitecpp \
     rocksdb[lz4] \
     leveldb \
+    doctest \
 
 if [ ! -d "build/berkeleydb" ]; then
     mkdir -p build
