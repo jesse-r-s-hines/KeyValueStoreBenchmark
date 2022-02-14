@@ -193,8 +193,7 @@ namespace dbwrappers {
         }
 
         void update(const string& key, const string& value) override {
-            leveldb::Status s = db->Put(leveldb::WriteOptions(), key, value);
-            checkStatus(s);
+            insert(key, value);
         }
 
         string get(const string& key) override {
@@ -241,8 +240,7 @@ namespace dbwrappers {
         }
 
         void update(const string& key, const string& value) override {
-            rocksdb::Status s = db->Put(rocksdb::WriteOptions(), key, value);
-            checkStatus(s);
+            insert(key, value);
         }
 
         string get(const string& key) override {
