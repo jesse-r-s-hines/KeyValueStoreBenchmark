@@ -15,12 +15,11 @@ namespace tests {
         std::filesystem::remove_all("dbs/tests");
         std::filesystem::create_directories("dbs/tests/");
 
-        array<unique_ptr<dbwrappers::DBWrapper>, 4> dbs{
-            make_unique<dbwrappers::SQLiteWrapper>("dbs/tests/sqlite3.db"),
-            make_unique<dbwrappers::LevelDBWrapper>("dbs/tests/leveldb.db"),
-            make_unique<dbwrappers::RocksDBWrapper>("dbs/tests/rocksdb.db"),
-            make_unique<dbwrappers::BerkeleyDBWraper>("dbs/tests/berkleydb.db"),
-        };
+        vector<unique_ptr<dbwrappers::DBWrapper>> dbs{}; // can't use initializer list with unique_ptr for some reason
+        dbs.push_back(make_unique<dbwrappers::SQLiteWrapper>("dbs/tests/sqlite3.db"));
+        dbs.push_back(make_unique<dbwrappers::LevelDBWrapper>("dbs/tests/leveldb.db"));
+        dbs.push_back(make_unique<dbwrappers::RocksDBWrapper>("dbs/tests/rocksdb.db"));
+        dbs.push_back(make_unique<dbwrappers::BerkeleyDBWrapper>("dbs/tests/berkleydb.db"));
 
         SUBCASE("Basic") {
             for (auto& db : dbs) {

@@ -261,7 +261,7 @@ namespace dbwrappers {
      * See https://docs.oracle.com/cd/E17076_05/html/gsg/CXX/BerkeleyDB-Core-Cxx-GSG.pdf and
      * https://docs.oracle.com/database/bdb181/html/api_reference/CXX/frame_main.html for docs
      */
-    class BerkeleyDBWraper : public DBWrapper {
+    class BerkeleyDBWrapper : public DBWrapper {
         Db db;
 
         static Dbt makeDbt(const string& str) {
@@ -276,12 +276,12 @@ namespace dbwrappers {
         }
 
     public:
-        BerkeleyDBWraper(const string& filename) : db(NULL, 0) {
+        BerkeleyDBWrapper(const string& filename) : db(NULL, 0) {
             int s = db.open(NULL, filename.c_str(), NULL, DB_BTREE, DB_CREATE, 0);
             checkStatus(s);
         }
 
-        ~BerkeleyDBWraper() {
+        ~BerkeleyDBWrapper() {
             int s = db.close(0);
             checkStatus(s);
         }
