@@ -12,7 +12,7 @@ else
     cd ..
 fi
 
-./vcpkg/vcpkg install \
+./vcpkg/vcpkg install --overlay-ports="./vcpkg_overlay_ports" \
     sqlitecpp \
     rocksdb[lz4] \
     leveldb \
