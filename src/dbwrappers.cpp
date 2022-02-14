@@ -73,9 +73,9 @@ namespace dbwrappers {
 
             // Note: This is doing a copy of the blob. the returned char* becomes invalid after calling `reset` so
             // we can't really avoid the copy? For benchmarking purposes we could potentially return a string_view or 
-            // something and just note the pointer becomes invalid after next call to get. Should probably use string_view
+            // or char* and just note the pointer becomes invalid after next call to get. Should probably use string_view
             // everywhere to avoid copies? Though reference already should avoid copy unless I'm passing char*
-            const string& value = getStmt.value().getColumn(0).getText();
+            string value = getStmt.value().getColumn(0).getString();
             getStmt.value().reset();
             return value;
         }
