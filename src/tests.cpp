@@ -5,21 +5,21 @@
 #define DOCTEST_CONFIG_IMPLEMENT
 #include "doctest/doctest.h"
 
-#include "dbwrappers.h"
+#include "stores.h"
 
 namespace tests {
     using std::unique_ptr, std::make_unique, std::vector, std::array;
     using namespace std::string_literals;
 
-    TEST_CASE("Test DBWrappers") {
+    TEST_CASE("Test Stores") {
         std::filesystem::remove_all("out/tests");
         std::filesystem::create_directories("out/tests/");
 
-        vector<unique_ptr<dbwrappers::DBWrapper>> dbs{}; // can't use initializer list with unique_ptr for some reason
-        dbs.push_back(make_unique<dbwrappers::SQLiteWrapper>("out/tests/sqlite3.db"));
-        dbs.push_back(make_unique<dbwrappers::LevelDBWrapper>("out/tests/leveldb.db"));
-        dbs.push_back(make_unique<dbwrappers::RocksDBWrapper>("out/tests/rocksdb.db"));
-        dbs.push_back(make_unique<dbwrappers::BerkeleyDBWrapper>("out/tests/berkleydb.db"));
+        vector<unique_ptr<stores::Store>> dbs{}; // can't use initializer list with unique_ptr for some reason
+        dbs.push_back(make_unique<stores::SQLiteWrapper>("out/tests/sqlite3.db"));
+        dbs.push_back(make_unique<stores::LevelDBWrapper>("out/tests/leveldb.db"));
+        dbs.push_back(make_unique<stores::RocksDBWrapper>("out/tests/rocksdb.db"));
+        dbs.push_back(make_unique<stores::BerkeleyDBWrapper>("out/tests/berkleydb.db"));
 
         SUBCASE("Basic") {
             for (auto& db : dbs) {

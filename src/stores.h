@@ -7,19 +7,18 @@
 #include "leveldb/db.h"
 #include <berkeleydb/include/db_cxx.h>
 
-namespace dbwrappers {
+namespace stores {
     using std::string, std::optional;
 
     /**
-     * Abstract base class for the other DB wrappers.
-     * 
+     * Abstract base class for a key-value store.
      * Can insert, update, get, and remove string keys and values.
      */
-    class DBWrapper {
+    class Store {
     public:
-        virtual ~DBWrapper() {}
+        virtual ~Store() {}
 
-        /** Returns the name of the underlying database */
+        /** Returns the name of the underlying store */
         virtual string type() = 0;
 
         virtual void insert(const string& key, const string& value) = 0;
@@ -29,7 +28,7 @@ namespace dbwrappers {
     };
 
 
-    class SQLiteWrapper : public DBWrapper {
+    class SQLiteWrapper : public Store {
         SQLite::Database db;
         // because of https://github.com/SRombauts/SQLiteCpp/issues/347 we need to use optional
         optional<SQLite::Statement> insertStmt;
@@ -163,7 +162,7 @@ namespace dbwrappers {
     };
     */
 
-    class LevelDBWrapper : public DBWrapper {
+    class LevelDBWrapper : public Store {
         leveldb::DB* db;
 
         void checkStatus(leveldb::Status status) {
@@ -210,7 +209,7 @@ namespace dbwrappers {
         }
     };
 
-    class RocksDBWrapper : public DBWrapper {
+    class RocksDBWrapper : public Store {
         rocksdb::DB* db;
 
         void checkStatus(rocksdb::Status status) {
@@ -261,7 +260,7 @@ namespace dbwrappers {
      * See https://docs.oracle.com/cd/E17076_05/html/gsg/CXX/BerkeleyDB-Core-Cxx-GSG.pdf and
      * https://docs.oracle.com/database/bdb181/html/api_reference/CXX/frame_main.html for docs
      */
-    class BerkeleyDBWrapper : public DBWrapper {
+    class BerkeleyDBWrapper : public Store {
         Db db;
 
         static Dbt makeDbt(const string& str) {

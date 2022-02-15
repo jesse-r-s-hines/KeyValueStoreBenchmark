@@ -11,7 +11,7 @@
 
 #include <boost/json/src.hpp>
 
-#include "dbwrappers.h"
+#include "stores.h"
 #include "helpers.h"
 
 #define DOCTEST_CONFIG_IMPLEMENT
@@ -73,11 +73,11 @@ BenchmarkData runBenchmark() {
     std::filesystem::remove_all("out/dbs");
     std::filesystem::create_directories("out/dbs");
 
-    vector<unique_ptr<dbwrappers::DBWrapper>> dbs{}; // can't use initializer list with unique_ptr for some reason
-    dbs.push_back(make_unique<dbwrappers::SQLiteWrapper>("out/dbs/sqlite3.db"));
-    dbs.push_back(make_unique<dbwrappers::LevelDBWrapper>("out/dbs/leveldb.db"));
-    dbs.push_back(make_unique<dbwrappers::RocksDBWrapper>("out/dbs/rocksdb.db"));
-    dbs.push_back(make_unique<dbwrappers::BerkeleyDBWrapper>("out/dbs/berkleydb.db"));
+    vector<unique_ptr<stores::Store>> dbs{}; // can't use initializer list with unique_ptr for some reason
+    dbs.push_back(make_unique<stores::SQLiteWrapper>("out/dbs/sqlite3.db"));
+    dbs.push_back(make_unique<stores::LevelDBWrapper>("out/dbs/leveldb.db"));
+    dbs.push_back(make_unique<stores::RocksDBWrapper>("out/dbs/rocksdb.db"));
+    dbs.push_back(make_unique<stores::BerkeleyDBWrapper>("out/dbs/berkleydb.db"));
 
     BenchmarkData data;
 
