@@ -22,6 +22,7 @@ using std::vector, std::map, std::tuple, std::string, std::unique_ptr, std::make
 namespace json = boost::json;
 namespace chrono = std::chrono;
 
+/** Keeps the average and other statistics. */
 template<typename T>
 class Stats {
     long long _count = 0;
@@ -37,11 +38,11 @@ public:
         _count++;
     }
 
-    /** Note: Divide by zero if we haven't recording anything */
     T count() { return _count; }
     T sum() { return _sum; }
     T min() { return _min; }
     T max() { return _max; }
+    /** Note: Throws divide by zero if you haven't recording anything */
     T avg() { return _sum / _count; }
 };
 
