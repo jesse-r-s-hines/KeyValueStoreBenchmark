@@ -38,63 +38,34 @@ public:
         _count++;
     }
 
-    long long count() { return _count; }
-    T sum() { return _sum; }
-    T min() { return _min; }
-    T max() { return _max; }
+    long long count() const { return _count; }
+    T sum() const { return _sum; }
+    T min() const { return _min; }
+    T max() const { return _max; }
     /** Note: Throws divide by zero if you haven't recording anything */
-    T avg() { return _sum / _count; }
+    T avg() const { return _sum / _count; }
 };
 
-/** Maps a vector of matrix options to the gathered statistics. */
-using BenchmarkData = map<vector<string>, Stats<chrono::nanoseconds>>;
+struct BenchmarkRecord {
+    string store;
+    string op;
+    Stats<long long> stats{};
+};
 
-/**
- * Converts a BenchmarkData into a nested JSON object that will look something like this:
- * ```json
- * {
- *   "berkeleydb": {
- *     "1B-1KiB": {
- *       "insert": {"count": 100, "sum": 540781, "min": 4085, "max": 83592, "avg": 5407},
- *       "update": {"count": 100, "sum": 541223, "min": 4628, "max": 18565, "avg": 5412},
- *       "get": {"count": 100, "sum": 248928, "min": 2192, "max": 12442, "avg": 2489},
- *       "remove": {"count": 100, "sum": 391105, "min": 3631, "max": 12406, "avg": 3911},
- *     },
- *     "1Kib-10Kib": {
- *       ...
- *     },
- *     ...
- *   },
- *   "leveldb": {
- *        ...
- *   },
- *   ...
- * }
- * 
- * ```
- */
-json::object benchmarkToJson(BenchmarkData data) {
-    json::object root;
-
-    for (auto& [path, stats] : data) {
-        json::object* obj = &root;
-        for (auto& key : path) {
-            if (!obj->contains(key)) {
-                (*obj)[key] = json::object();
-            }
-            obj = &((*obj)[key].as_object());
-        }
-        (*obj)["count"] = stats.count();
-        (*obj)["sum"] = stats.sum().count();  // convert nanoseconds to raw int
-        (*obj)["min"] = stats.min().count();
-        (*obj)["max"] = stats.max().count();
-        (*obj)["avg"] = stats.avg().count();
-    }
-
-    return root;
+/** Custom boost JSON conversion. */
+void tag_invoke(const json::value_from_tag&, json::value& jv, BenchmarkRecord const& r) {
+    jv = {
+        {"store", r.store        },
+        {"op"   , r.op           },
+        {"count", r.stats.count()},
+        {"sum"  , r.stats.sum()  },
+        {"min"  , r.stats.min()  },
+        {"max"  , r.stats.max()  },
+        {"avg"  , r.stats.avg()  },
+    };
 }
 
-BenchmarkData runBenchmark() {
+vector<BenchmarkRecord> runBenchmark() {
     std::filesystem::remove_all("out/dbs");
     std::filesystem::create_directories("out/dbs");
 
@@ -104,33 +75,40 @@ BenchmarkData runBenchmark() {
     dbs.push_back(make_unique<stores::RocksDBStore>("out/dbs/rocksdb.db"));
     dbs.push_back(make_unique<stores::BerkeleyDBStore>("out/dbs/berkleydb.db"));
 
-    BenchmarkData data;
+    vector<BenchmarkRecord> records;
 
     for (auto& db : dbs) {
+        BenchmarkRecord insertData{db->type(), "insert"};
+        BenchmarkRecord updateData{db->type(), "update"};
+        BenchmarkRecord getData   {db->type(), "get"   };
+        BenchmarkRecord removeData{db->type(), "remove"};
+
         for (int i = 0; i < 100; i++) {
             string key = helpers::randHash();
             string blob = helpers::randBlob(1024);
 
             auto time = helpers::timeIt([&]() { db->insert(key, blob); });
-            data[{db->type(), "insert"}].record(time);
+            insertData.stats.record(time.count());
 
             blob = helpers::randBlob(1024);
             time = helpers::timeIt([&]() { db->update(key, blob); });
-            data[{db->type(), "update"}].record(time);
+            updateData.stats.record(time.count());
 
             string value;
             time = helpers::timeIt([&]() {
                 value = db->get(key);
             });
             if (value.size() == 0) throw std::runtime_error("DB get failed"); // make sure compiler doe
-            data[{db->type(), "get"}].record(time);
+            getData.stats.record(time.count());
 
             time = helpers::timeIt([&]() { db->remove(key); });
-            data[{db->type(), "remove"}].record(time);
+            removeData.stats.record(time.count());
         }
+
+        records.insert(records.end(), {insertData, updateData, getData, removeData});
     }
 
-    return data;
+    return records;
 }
 
 
@@ -141,10 +119,10 @@ int main(int argc, char** argv) {
     int res = context.run();
     if(context.shouldExit()) return res;
 
-    BenchmarkData data = runBenchmark();
+    vector<BenchmarkRecord> records = runBenchmark();
 
     std::ofstream output;
     output.open("out/benchmark.json");
-    output << benchmarkToJson(data);
+    output << json::value_from(records);
     output.close();
 }
