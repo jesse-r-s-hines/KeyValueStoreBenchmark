@@ -46,9 +46,33 @@ public:
     T avg() { return _sum / _count; }
 };
 
-
+/** Maps a vector of matrix options to the gathered statistics. */
 using BenchmarkData = map<vector<string>, Stats<long long>>;
 
+/**
+ * Converts a BenchmarkData into a nested JSON object that will look something like this:
+ * ```json
+ * {
+ *   "berkeleydb": {
+ *     "1B-1KiB": {
+ *       "insert": {"count": 100, "sum": 540781, "min": 4085, "max": 83592, "avg": 5407},
+ *       "update": {"count": 100, "sum": 541223, "min": 4628, "max": 18565, "avg": 5412},
+ *       "get": {"count": 100, "sum": 248928, "min": 2192, "max": 12442, "avg": 2489},
+ *       "remove": {"count": 100, "sum": 391105, "min": 3631, "max": 12406, "avg": 3911},
+ *     },
+ *     "1Kib-10Kib": {
+ *       ...
+ *     },
+ *     ...
+ *   },
+ *   "leveldb": {
+ *        ...
+ *   },
+ *   ...
+ * }
+ * 
+ * ```
+ */
 json::object benchmarkToJson(BenchmarkData data) {
     json::object root;
 
