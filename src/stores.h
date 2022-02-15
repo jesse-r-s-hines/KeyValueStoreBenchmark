@@ -28,7 +28,7 @@ namespace stores {
     };
 
 
-    class SQLiteWrapper : public Store {
+    class SQLiteStore : public Store {
         SQLite::Database db;
         // because of https://github.com/SRombauts/SQLiteCpp/issues/347 we need to use optional
         optional<SQLite::Statement> insertStmt;
@@ -37,7 +37,7 @@ namespace stores {
         optional<SQLite::Statement> removeStmt;
 
     public:
-        SQLiteWrapper(const string& filename) :
+        SQLiteStore(const string& filename) :
             db(filename, SQLite::OPEN_READWRITE|SQLite::OPEN_CREATE) {
 
             string sql = 
@@ -88,7 +88,7 @@ namespace stores {
     };
 
     /*
-    class SQLiteWrapper : public DB {
+    class SQLiteStore : public DB {
         sqlite3* db = nullptr;
         sqlite3_stmt* insertStmt = nullptr;
         sqlite3_stmt* updateStmt = nullptr;
@@ -96,7 +96,7 @@ namespace stores {
         sqlite3_stmt* removeStmt = nullptr;
 
     public:
-        SQLiteWrapper(string filename) {
+        SQLiteStore(string filename) {
             sqlite3_open(filename.c_str(), &db);
             char* errMmsg = nullptr;
 
@@ -120,7 +120,7 @@ namespace stores {
             sqlite3_prepare_v2(this->db, sql.c_str(), sql.length(), &(this->removeStmt), nullptr);
         }
 
-        ~SQLiteWrapper() {
+        ~SQLiteStore() {
             sqlite3_close(this->db);
             sqlite3_finalize(this->insertStmt);
             sqlite3_finalize(this->updateStmt);
@@ -162,7 +162,7 @@ namespace stores {
     };
     */
 
-    class LevelDBWrapper : public Store {
+    class LevelDBStore : public Store {
         leveldb::DB* db;
 
         void checkStatus(leveldb::Status status) {
@@ -172,7 +172,7 @@ namespace stores {
         }
 
     public:
-        LevelDBWrapper(const string& filename) {
+        LevelDBStore(const string& filename) {
             leveldb::Options options;
             options.create_if_missing = true;
             
@@ -180,7 +180,7 @@ namespace stores {
             checkStatus(status);
         }
 
-        ~LevelDBWrapper() {
+        ~LevelDBStore() {
             delete db;
         }
 
@@ -209,7 +209,7 @@ namespace stores {
         }
     };
 
-    class RocksDBWrapper : public Store {
+    class RocksDBStore : public Store {
         rocksdb::DB* db;
 
         void checkStatus(rocksdb::Status status) {
@@ -219,7 +219,7 @@ namespace stores {
         }
 
     public:
-        RocksDBWrapper(const string& filename) {
+        RocksDBStore(const string& filename) {
             rocksdb::Options options;
             options.create_if_missing = true;
             
@@ -227,7 +227,7 @@ namespace stores {
             checkStatus(status);
         }
 
-        ~RocksDBWrapper() {
+        ~RocksDBStore() {
             delete db;
         }
 
@@ -260,7 +260,7 @@ namespace stores {
      * See https://docs.oracle.com/cd/E17076_05/html/gsg/CXX/BerkeleyDB-Core-Cxx-GSG.pdf and
      * https://docs.oracle.com/database/bdb181/html/api_reference/CXX/frame_main.html for docs
      */
-    class BerkeleyDBWrapper : public Store {
+    class BerkeleyDBStore : public Store {
         Db db;
 
         static Dbt makeDbt(const string& str) {
@@ -275,12 +275,12 @@ namespace stores {
         }
 
     public:
-        BerkeleyDBWrapper(const string& filename) : db(NULL, 0) {
+        BerkeleyDBStore(const string& filename) : db(NULL, 0) {
             int s = db.open(NULL, filename.c_str(), NULL, DB_BTREE, DB_CREATE, 0);
             checkStatus(s);
         }
 
-        ~BerkeleyDBWrapper() {
+        ~BerkeleyDBStore() {
             int s = db.close(0);
             checkStatus(s);
         }
