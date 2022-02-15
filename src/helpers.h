@@ -42,6 +42,30 @@ namespace helpers {
         auto stop = chrono::steady_clock::now();
         return chrono::duration_cast<chrono::nanoseconds>(stop - start);
     }
+
+    /** Keeps the average and other statistics. */
+    template<typename T>
+    class Stats {
+        long long _count = 0;
+        T _sum;
+        T _min;
+        T _max;
+
+    public:
+        void record(T value) {
+            _sum += value;
+            if (_count == 0 || value < _min) _min = value;
+            if (_count == 0 || value > _max) _max = value;
+            _count++;
+        }
+
+        long long count() const { return _count; }
+        T sum() const { return _sum; }
+        T min() const { return _min; }
+        T max() const { return _max; }
+        /** Note: Throws divide by zero if you haven't recording anything */
+        T avg() const { return _sum / _count; }
+    };
 }
 
 
