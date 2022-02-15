@@ -38,7 +38,7 @@ public:
         _count++;
     }
 
-    T count() { return _count; }
+    long long count() { return _count; }
     T sum() { return _sum; }
     T min() { return _min; }
     T max() { return _max; }
@@ -47,7 +47,7 @@ public:
 };
 
 /** Maps a vector of matrix options to the gathered statistics. */
-using BenchmarkData = map<vector<string>, Stats<long long>>;
+using BenchmarkData = map<vector<string>, Stats<chrono::nanoseconds>>;
 
 /**
  * Converts a BenchmarkData into a nested JSON object that will look something like this:
@@ -85,10 +85,10 @@ json::object benchmarkToJson(BenchmarkData data) {
             obj = &((*obj)[key].as_object());
         }
         (*obj)["count"] = stats.count();
-        (*obj)["sum"] = stats.sum();
-        (*obj)["min"] = stats.min();
-        (*obj)["max"] = stats.max();
-        (*obj)["avg"] = stats.avg();
+        (*obj)["sum"] = stats.sum().count();  // convert nanoseconds to raw int
+        (*obj)["min"] = stats.min().count();
+        (*obj)["max"] = stats.max().count();
+        (*obj)["avg"] = stats.avg().count();
     }
 
     return root;
@@ -112,21 +112,21 @@ BenchmarkData runBenchmark() {
             string blob = helpers::randBlob(1024);
 
             auto time = helpers::timeIt([&]() { db->insert(key, blob); });
-            data[{db->type(), "insert"}].record(time.count());
+            data[{db->type(), "insert"}].record(time);
 
             blob = helpers::randBlob(1024);
             time = helpers::timeIt([&]() { db->update(key, blob); });
-            data[{db->type(), "update"}].record(time.count());
+            data[{db->type(), "update"}].record(time);
 
             string value;
             time = helpers::timeIt([&]() {
                 value = db->get(key);
             });
             if (value.size() == 0) throw std::runtime_error("DB get failed"); // make sure compiler doe
-            data[{db->type(), "get"}].record(time.count());
+            data[{db->type(), "get"}].record(time);
 
             time = helpers::timeIt([&]() { db->remove(key); });
-            data[{db->type(), "remove"}].record(time.count());
+            data[{db->type(), "remove"}].record(time);
         }
     }
 
