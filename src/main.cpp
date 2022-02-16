@@ -1,13 +1,11 @@
 #include <iostream>
 #include <fstream>
 #include <filesystem>
-#include <random>
 #include <memory>
 #include <chrono>
 #include <vector>
 #include <map>
 #include <tuple>
-#include <cmath>
 
 #include <boost/json/src.hpp>
 
@@ -18,7 +16,8 @@
 #include "doctest/doctest.h"
 #include "tests.cpp"
 
-using std::vector, std::map, std::tuple, std::string, std::unique_ptr, std::make_unique;
+using std::vector, std::map, std::tuple, std::pair, std::string, std::unique_ptr, std::make_unique;
+using namespace std::string_literals;
 namespace json = boost::json;
 namespace chrono = std::chrono;
 
@@ -49,7 +48,7 @@ vector<BenchmarkRecord> runBenchmark() {
     dbs.push_back(make_unique<stores::SQLiteStore>("out/dbs/sqlite3.db"));
     dbs.push_back(make_unique<stores::LevelDBStore>("out/dbs/leveldb.db"));
     dbs.push_back(make_unique<stores::RocksDBStore>("out/dbs/rocksdb.db"));
-    dbs.push_back(make_unique<stores::BerkeleyDBStore>("out/dbs/berkleydb.db"));
+    dbs.push_back(make_unique<stores::BerkeleyDBStore>("out/dbs/berkeleydb.db"));
 
     vector<BenchmarkRecord> records;
 

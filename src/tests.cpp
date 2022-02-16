@@ -19,7 +19,7 @@ namespace tests {
         dbs.push_back(make_unique<stores::SQLiteStore>("out/tests/sqlite3.db"));
         dbs.push_back(make_unique<stores::LevelDBStore>("out/tests/leveldb.db"));
         dbs.push_back(make_unique<stores::RocksDBStore>("out/tests/rocksdb.db"));
-        dbs.push_back(make_unique<stores::BerkeleyDBStore>("out/tests/berkleydb.db"));
+        dbs.push_back(make_unique<stores::BerkeleyDBStore>("out/tests/berkeleydb.db"));
 
         SUBCASE("Basic") {
             for (auto& db : dbs) {
