@@ -83,6 +83,16 @@ vector<BenchmarkRecord> runBenchmark() {
         records.insert(records.end(), {insertData, updateData, getData, removeData});
     }
 
+    vector<pair<BenchmarkRecord, string>> sizeRecords;
+    for (auto& db : dbs)
+        sizeRecords.push_back({{db->type(), "size"}, "out/dbs/"s + db->type() + ".db"});
+    dbs.clear(); // delete and close all dbs so we can get final size
+
+    for (auto& sizeRecord : sizeRecords) {
+        sizeRecord.first.stats.record(helpers::diskUsage(sizeRecord.second));
+        records.push_back(sizeRecord.first);
+    }
+
     return records;
 }
 

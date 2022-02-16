@@ -5,7 +5,7 @@ find_package(SQLiteCpp REQUIRED)
 find_package(RocksDB REQUIRED)
 find_package(leveldb REQUIRED)
 find_package(doctest REQUIRED)
-find_package(Boost REQUIRED COMPONENTS json)
+find_package(Boost REQUIRED COMPONENTS system filesystem)
 
 # add the executable
 add_executable(benchmark src/main.cpp)
@@ -21,6 +21,9 @@ target_link_libraries(benchmark
         ${CMAKE_BINARY_DIR}/berkeleydb/lib/libdb_cxx.a
         ${CMAKE_BINARY_DIR}/berkeleydb/lib/libdb_stl.a
         doctest::doctest
+        Boost::boost
+        Boost::system
+        Boost::filesystem
 )
 
 target_include_directories(benchmark PRIVATE build)

@@ -2,9 +2,11 @@
 #include <random>
 #include <functional>
 #include <chrono>
-#include<iostream>
+
+#include <boost/process.hpp>
 
 namespace helpers {
+    namespace process = boost::process;
     namespace chrono = std::chrono;
 
     std::random_device randomDevice;
@@ -66,6 +68,20 @@ namespace helpers {
         /** Note: Throws divide by zero if you haven't recording anything */
         T avg() const { return _sum / _count; }
     };
+
+    long long diskUsage(const std::string& path) {
+        // TODO make a windows version of this?
+        process::ipstream out;
+        process::child du(process::search_path("du"), "-s", "--block-size=1", path, process::std_out > out);
+
+        std::string outputStr;
+        std::string line;
+        while (du.running() && std::getline(out, line) && !line.empty())
+            outputStr += line;
+        du.wait();
+
+        return std::stol(outputStr);
+    }
 }
 
 

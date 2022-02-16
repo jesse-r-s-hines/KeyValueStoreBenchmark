@@ -18,6 +18,7 @@ fi
     rocksdb[lz4] \
     leveldb \
     boost-json \
+    boost-process \
     doctest \
 
 if [ ! -d "build/berkeleydb" ]; then
