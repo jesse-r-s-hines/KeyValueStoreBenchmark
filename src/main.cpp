@@ -6,6 +6,7 @@
 #include <vector>
 #include <map>
 #include <tuple>
+#include <iomanip>
 
 #include <boost/json/src.hpp>
 
@@ -106,8 +107,15 @@ int main(int argc, char** argv) {
 
     vector<BenchmarkRecord> records = runBenchmark();
 
+    string outFileName = "out/benchmark.json";
     std::ofstream output;
-    output.open("out/benchmark.json");
-    output << json::value_from(records);
+    output.open(outFileName);
+
+    output << "[\n";
+    for (size_t i = 0; i < records.size(); i++) {
+        output << "    " << json::value_from(records[i]) << (i < records.size() - 1 ? "," : "") << "\n";
+    }
+    output << "]\n";
     output.close();
+    std::cout << "Benchmark written to " << std::quoted(outFileName) << "\n";
 }
