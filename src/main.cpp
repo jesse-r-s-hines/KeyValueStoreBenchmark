@@ -46,10 +46,10 @@ vector<BenchmarkRecord> runBenchmark() {
     std::filesystem::create_directories("out/dbs");
 
     vector<unique_ptr<stores::Store>> dbs{}; // can't use initializer list with unique_ptr for some reason
-    dbs.push_back(make_unique<stores::SQLiteStore>("out/dbs/sqlite3.db"));
-    dbs.push_back(make_unique<stores::LevelDBStore>("out/dbs/leveldb.db"));
-    dbs.push_back(make_unique<stores::RocksDBStore>("out/dbs/rocksdb.db"));
-    dbs.push_back(make_unique<stores::BerkeleyDBStore>("out/dbs/berkeleydb.db"));
+    dbs.push_back(stores::getStore("sqlite3", "out/sqlite3.db", false));
+    dbs.push_back(stores::getStore("leveldb", "out/leveldb.db", false));
+    dbs.push_back(stores::getStore("rocksdb", "out/rocksdb.db", false));
+    dbs.push_back(stores::getStore("berkeleydb", "out/berkeleydb.db", false));
 
     vector<BenchmarkRecord> records;
 
