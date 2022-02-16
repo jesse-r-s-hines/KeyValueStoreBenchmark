@@ -86,7 +86,7 @@ vector<BenchmarkRecord> runBenchmark() {
 
     vector<pair<BenchmarkRecord, string>> sizeRecords;
     for (auto& db : dbs)
-        sizeRecords.push_back({{db->type(), "size"}, "out/dbs/"s + db->type() + ".db"});
+        sizeRecords.push_back({{db->type(), "size"}, db->filepath});
     dbs.clear(); // delete and close all dbs so we can get final size
 
     for (auto& sizeRecord : sizeRecords) {

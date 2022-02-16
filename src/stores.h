@@ -16,6 +16,9 @@ namespace stores {
      */
     class Store {
     public:
+        const string filepath;
+
+        Store(const string& filepath) : filepath(filepath) {} 
         virtual ~Store() {}
 
         /** Returns the name of the underlying store */
@@ -37,8 +40,8 @@ namespace stores {
         optional<SQLite::Statement> removeStmt;
 
     public:
-        SQLiteStore(const string& filename) :
-            db(filename, SQLite::OPEN_READWRITE|SQLite::OPEN_CREATE) {
+        SQLiteStore(const string& filepath) : Store(filepath),
+            db(filepath, SQLite::OPEN_READWRITE|SQLite::OPEN_CREATE) {
 
             string sql = 
                 "CREATE TABLE IF NOT EXISTS data("
@@ -172,11 +175,11 @@ namespace stores {
         }
 
     public:
-        LevelDBStore(const string& filename) {
+        LevelDBStore(const string& filepath) : Store(filepath) {
             leveldb::Options options;
             options.create_if_missing = true;
             
-            leveldb::Status status = leveldb::DB::Open(options, filename, &db);
+            leveldb::Status status = leveldb::DB::Open(options, filepath, &db);
             checkStatus(status);
         }
 
@@ -219,11 +222,11 @@ namespace stores {
         }
 
     public:
-        RocksDBStore(const string& filename) {
+        RocksDBStore(const string& filepath) : Store(filepath) {
             rocksdb::Options options;
             options.create_if_missing = true;
             
-            rocksdb::Status status = rocksdb::DB::Open(options, filename, &db);
+            rocksdb::Status status = rocksdb::DB::Open(options, filepath, &db);
             checkStatus(status);
         }
 
@@ -275,8 +278,8 @@ namespace stores {
         }
 
     public:
-        BerkeleyDBStore(const string& filename) : db(NULL, 0) {
-            int s = db.open(NULL, filename.c_str(), NULL, DB_BTREE, DB_CREATE, 0);
+        BerkeleyDBStore(const string& filepath) : Store(filepath), db(NULL, 0) {
+            int s = db.open(NULL, filepath.c_str(), NULL, DB_BTREE, DB_CREATE, 0);
             checkStatus(s);
         }
 
