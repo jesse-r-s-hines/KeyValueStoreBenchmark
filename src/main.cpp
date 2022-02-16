@@ -54,10 +54,10 @@ vector<BenchmarkRecord> runBenchmark() {
     vector<BenchmarkRecord> records;
 
     for (auto& db : dbs) {
-        BenchmarkRecord insertData{db->type(), "insert"};
-        BenchmarkRecord updateData{db->type(), "update"};
-        BenchmarkRecord getData   {db->type(), "get"   };
-        BenchmarkRecord removeData{db->type(), "remove"};
+        BenchmarkRecord insertData{db->type, "insert"};
+        BenchmarkRecord updateData{db->type, "update"};
+        BenchmarkRecord getData   {db->type, "get"   };
+        BenchmarkRecord removeData{db->type, "remove"};
 
         for (int i = 0; i < 100; i++) {
             string key = utils::randHash();
@@ -86,7 +86,7 @@ vector<BenchmarkRecord> runBenchmark() {
 
     vector<pair<BenchmarkRecord, string>> sizeRecords;
     for (auto& db : dbs)
-        sizeRecords.push_back({{db->type(), "size"}, db->filepath});
+        sizeRecords.push_back({{db->type, "size"}, db->filepath});
     dbs.clear(); // delete and close all dbs so we can get final size
 
     for (auto& sizeRecord : sizeRecords) {

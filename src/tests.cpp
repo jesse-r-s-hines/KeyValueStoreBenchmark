@@ -23,7 +23,7 @@ namespace tests {
 
         SUBCASE("Basic") {
             for (auto& db : dbs) {
-                INFO(db->type());
+                INFO(db->type);
 
                 db->insert("key", "value");
                 REQUIRE(db->get("key") == "value");
@@ -39,7 +39,7 @@ namespace tests {
 
         SUBCASE("Nulls") {
             for (auto& db : dbs) {
-                INFO(db->type());
+                INFO(db->type);
 
                 db->insert("key", "hello\0world"s);
                 REQUIRE(db->get("key") == "hello\0world"s);

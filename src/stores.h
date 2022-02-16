@@ -17,12 +17,11 @@ namespace stores {
     class Store {
     public:
         const string filepath;
+        /** Name of the underlying store */
+        const string type;
 
-        Store(const string& filepath) : filepath(filepath) {} 
+        Store(const string& filepath, const string& type) : filepath(filepath), type(type) {} 
         virtual ~Store() {}
-
-        /** Returns the name of the underlying store */
-        virtual string type() = 0;
 
         virtual void insert(const string& key, const string& value) = 0;
         virtual void update(const string& key, const string& value) = 0;
@@ -40,7 +39,7 @@ namespace stores {
         optional<SQLite::Statement> removeStmt;
 
     public:
-        SQLiteStore(const string& filepath) : Store(filepath),
+        SQLiteStore(const string& filepath) : Store(filepath, "sqlite3"),
             db(filepath, SQLite::OPEN_READWRITE|SQLite::OPEN_CREATE) {
 
             string sql = 
@@ -55,8 +54,6 @@ namespace stores {
             getStmt.emplace(db, "SELECT value FROM data WHERE key = ?");
             removeStmt.emplace(db, "DELETE FROM data WHERE key = ?");
         }
-
-        string type() override { return "sqlite3"; }
 
         void insert(const string& key, const string& value) override {
             SQLite::bind(insertStmt.value(), key, value);
@@ -175,7 +172,7 @@ namespace stores {
         }
 
     public:
-        LevelDBStore(const string& filepath) : Store(filepath) {
+        LevelDBStore(const string& filepath) : Store(filepath, "leveldb") {
             leveldb::Options options;
             options.create_if_missing = true;
             
@@ -186,9 +183,6 @@ namespace stores {
         ~LevelDBStore() {
             delete db;
         }
-
-        string type() override { return "leveldb"; }
-
 
         void insert(const string& key, const string& value) override {
            leveldb::Status s = db->Put(leveldb::WriteOptions(), key, value);
@@ -222,7 +216,7 @@ namespace stores {
         }
 
     public:
-        RocksDBStore(const string& filepath) : Store(filepath) {
+        RocksDBStore(const string& filepath) : Store(filepath, "rocksdb") {
             rocksdb::Options options;
             options.create_if_missing = true;
             
@@ -233,9 +227,6 @@ namespace stores {
         ~RocksDBStore() {
             delete db;
         }
-
-        string type() override { return "rocksdb"; }
-
 
         void insert(const string& key, const string& value) override {
            rocksdb::Status s = db->Put(rocksdb::WriteOptions(), key, value);
@@ -278,7 +269,7 @@ namespace stores {
         }
 
     public:
-        BerkeleyDBStore(const string& filepath) : Store(filepath), db(NULL, 0) {
+        BerkeleyDBStore(const string& filepath) : Store(filepath, "berkeleydb"), db(NULL, 0) {
             int s = db.open(NULL, filepath.c_str(), NULL, DB_BTREE, DB_CREATE, 0);
             checkStatus(s);
         }
@@ -287,9 +278,6 @@ namespace stores {
             int s = db.close(0);
             checkStatus(s);
         }
-
-        string type() override { return "berkeleydb"; }
-
 
         void insert(const string& key, const string& value) override {
             Dbt keyDbt = makeDbt(key);
