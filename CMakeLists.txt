@@ -21,9 +21,7 @@ target_link_libraries(benchmark
         ${CMAKE_BINARY_DIR}/berkeleydb/lib/libdb_cxx.a
         ${CMAKE_BINARY_DIR}/berkeleydb/lib/libdb_stl.a
         doctest::doctest
-        Boost::boost
-        Boost::system
-        Boost::filesystem
+        ${Boost_LIBRARIES}
 )
 
 target_include_directories(benchmark PRIVATE build)
