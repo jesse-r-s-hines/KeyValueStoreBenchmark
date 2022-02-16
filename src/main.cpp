@@ -24,7 +24,7 @@ namespace chrono = std::chrono;
 struct BenchmarkRecord {
     string store;
     string op;
-    helpers::Stats<long long> stats{};
+    utils::Stats<long long> stats{};
 };
 
 /** Custom boost JSON conversion. */
@@ -59,24 +59,24 @@ vector<BenchmarkRecord> runBenchmark() {
         BenchmarkRecord removeData{db->type(), "remove"};
 
         for (int i = 0; i < 100; i++) {
-            string key = helpers::randHash();
-            string blob = helpers::randBlob(1024);
+            string key = utils::randHash();
+            string blob = utils::randBlob(1024);
 
-            auto time = helpers::timeIt([&]() { db->insert(key, blob); });
+            auto time = utils::timeIt([&]() { db->insert(key, blob); });
             insertData.stats.record(time.count());
 
-            blob = helpers::randBlob(1024);
-            time = helpers::timeIt([&]() { db->update(key, blob); });
+            blob = utils::randBlob(1024);
+            time = utils::timeIt([&]() { db->update(key, blob); });
             updateData.stats.record(time.count());
 
             string value;
-            time = helpers::timeIt([&]() {
+            time = utils::timeIt([&]() {
                 value = db->get(key);
             });
             if (value.size() == 0) throw std::runtime_error("DB get failed"); // make sure compiler doe
             getData.stats.record(time.count());
 
-            time = helpers::timeIt([&]() { db->remove(key); });
+            time = utils::timeIt([&]() { db->remove(key); });
             removeData.stats.record(time.count());
         }
 
@@ -89,7 +89,7 @@ vector<BenchmarkRecord> runBenchmark() {
     dbs.clear(); // delete and close all dbs so we can get final size
 
     for (auto& sizeRecord : sizeRecords) {
-        sizeRecord.first.stats.record(helpers::diskUsage(sizeRecord.second));
+        sizeRecord.first.stats.record(utils::diskUsage(sizeRecord.second));
         records.push_back(sizeRecord.first);
     }
 
