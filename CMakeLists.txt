@@ -8,7 +8,7 @@ find_package(doctest REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system filesystem)
 
 # add the executable
-add_executable(benchmark src/main.cpp src/stores.cpp)
+add_executable(benchmark src/main.cpp src/stores.cpp src/utils.cpp)
 set_property(TARGET benchmark PROPERTY CXX_STANDARD 17)
 # GCC specific
 target_compile_options(benchmark PRIVATE -Wall -Wextra -pedantic -O2)
