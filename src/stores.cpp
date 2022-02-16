@@ -13,7 +13,8 @@ namespace stores {
     using std::string, std::optional, std::unique_ptr, std::make_unique;
     using namespace std::string_literals;
 
-    Store::Store(const string& filepath, const string& type) : filepath(filepath), type(type) {} 
+    Store::Store(const string& filepath) : filepath(filepath) {};
+    std::string Store::typeName() { return typeNames[(int) this->type()]; };
 
     class SQLite3Store : public Store {
         SQLite::Database db;
@@ -24,7 +25,7 @@ namespace stores {
         optional<SQLite::Statement> removeStmt;
 
     public:
-        SQLite3Store(const string& filepath) : Store(filepath, "sqlite3"),
+        SQLite3Store(const string& filepath) : Store(filepath),
             db(filepath, SQLite::OPEN_READWRITE|SQLite::OPEN_CREATE) {
 
             string sql = 
@@ -39,6 +40,8 @@ namespace stores {
             getStmt.emplace(db, "SELECT value FROM data WHERE key = ?");
             removeStmt.emplace(db, "DELETE FROM data WHERE key = ?");
         }
+
+        Type type() { return Type::SQLite3; }
 
         void insert(const string& key, const string& value) override {
             SQLite::bind(insertStmt.value(), key, value);
@@ -157,7 +160,7 @@ namespace stores {
         }
 
     public:
-        LevelDBStore(const string& filepath) : Store(filepath, "leveldb") {
+        LevelDBStore(const string& filepath) : Store(filepath) {
             leveldb::Options options;
             options.create_if_missing = true;
             
@@ -168,6 +171,8 @@ namespace stores {
         ~LevelDBStore() {
             delete db;
         }
+
+        Type type() { return Type::LevelDB; }
 
         void insert(const string& key, const string& value) override {
            leveldb::Status s = db->Put(leveldb::WriteOptions(), key, value);
@@ -201,7 +206,7 @@ namespace stores {
         }
 
     public:
-        RocksDBStore(const string& filepath) : Store(filepath, "rocksdb") {
+        RocksDBStore(const string& filepath) : Store(filepath) {
             rocksdb::Options options;
             options.create_if_missing = true;
             
@@ -212,6 +217,8 @@ namespace stores {
         ~RocksDBStore() {
             delete db;
         }
+
+        Type type() { return Type::RocksDB; }
 
         void insert(const string& key, const string& value) override {
            rocksdb::Status s = db->Put(rocksdb::WriteOptions(), key, value);
@@ -254,7 +261,7 @@ namespace stores {
         }
 
     public:
-        BerkeleyDBStore(const string& filepath) : Store(filepath, "berkeleydb"), db(NULL, 0) {
+        BerkeleyDBStore(const string& filepath) : Store(filepath), db(NULL, 0) {
             int s = db.open(NULL, filepath.c_str(), NULL, DB_BTREE, DB_CREATE, 0);
             checkStatus(s);
         }
@@ -263,6 +270,8 @@ namespace stores {
             int s = db.close(0);
             checkStatus(s);
         }
+
+        Type type() { return Type::BerkeleyDB; }
 
         void insert(const string& key, const string& value) override {
             Dbt keyDbt = makeDbt(key);
@@ -290,17 +299,18 @@ namespace stores {
         }
     };
 
-    unique_ptr<Store> getStore(std::string type, std::filesystem::path filepath, bool deleteIfExists) {
-        if (type == "sqlite3") {
-            return make_unique<stores::SQLite3Store>(filepath);
-        } else if (type == "leveldb") {
-            return make_unique<stores::LevelDBStore>(filepath);
-        } else if (type == "rocksdb") {
-            return make_unique<stores::RocksDBStore>(filepath);
-        } else if (type == "berkeleydb") {
-            return make_unique<stores::BerkeleyDBStore>(filepath);
-        } else {
-            throw std::runtime_error("Unknown type: "s + type);
+    unique_ptr<Store> getStore(Type type, string filepath, bool deleteIfExists) {
+        switch (type) {
+            case Type::SQLite3:
+                return make_unique<stores::SQLite3Store>(filepath);
+            case Type::LevelDB:
+                return make_unique<stores::LevelDBStore>(filepath);
+            case Type::RocksDB:
+                return make_unique<stores::RocksDBStore>(filepath);
+            case Type::BerkeleyDB:
+                return make_unique<stores::BerkeleyDBStore>(filepath);
+            default:
+                throw std::runtime_error("Unknown type: "s + typeNames[(int) type]);
         }
-    }
+    };
 }

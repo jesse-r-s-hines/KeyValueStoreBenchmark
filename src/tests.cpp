@@ -16,14 +16,14 @@ namespace tests {
         std::filesystem::create_directories("out/tests/");
 
         vector<unique_ptr<stores::Store>> dbs{}; // can't use initializer list with unique_ptr for some reason
-        dbs.push_back(stores::getStore("sqlite3", "out/tests/sqlite3.db", false));
-        dbs.push_back(stores::getStore("leveldb", "out/tests/leveldb.db", false));
-        dbs.push_back(stores::getStore("rocksdb", "out/tests/rocksdb.db", false));
-        dbs.push_back(stores::getStore("berkeleydb", "out/tests/berkeleydb.db", false));
+        dbs.push_back(stores::getStore(stores::Type::SQLite3, "out/tests/sqlite3.db", false));
+        dbs.push_back(stores::getStore(stores::Type::LevelDB, "out/tests/leveldb.db", false));
+        dbs.push_back(stores::getStore(stores::Type::RocksDB, "out/tests/rocksdb.db", false));
+        dbs.push_back(stores::getStore(stores::Type::BerkeleyDB, "out/tests/berkeleydb.db", false));
 
         SUBCASE("Basic") {
             for (auto& db : dbs) {
-                INFO(db->type);
+                INFO(db->typeName());
 
                 db->insert("key", "value");
                 REQUIRE(db->get("key") == "value");
@@ -39,7 +39,7 @@ namespace tests {
 
         SUBCASE("Nulls") {
             for (auto& db : dbs) {
-                INFO(db->type);
+                INFO(db->typeName());
 
                 db->insert("key", "hello\0world"s);
                 REQUIRE(db->get("key") == "hello\0world"s);

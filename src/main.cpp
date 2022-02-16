@@ -46,18 +46,18 @@ vector<BenchmarkRecord> runBenchmark() {
     std::filesystem::create_directories("out/dbs");
 
     vector<unique_ptr<stores::Store>> dbs{}; // can't use initializer list with unique_ptr for some reason
-    dbs.push_back(stores::getStore("sqlite3", "out/sqlite3.db", false));
-    dbs.push_back(stores::getStore("leveldb", "out/leveldb.db", false));
-    dbs.push_back(stores::getStore("rocksdb", "out/rocksdb.db", false));
-    dbs.push_back(stores::getStore("berkeleydb", "out/berkeleydb.db", false));
+    dbs.push_back(stores::getStore(stores::Type::SQLite3, "out/sqlite3.db", false));
+    dbs.push_back(stores::getStore(stores::Type::LevelDB, "out/leveldb.db", false));
+    dbs.push_back(stores::getStore(stores::Type::RocksDB, "out/rocksdb.db", false));
+    dbs.push_back(stores::getStore(stores::Type::BerkeleyDB, "out/berkeleydb.db", false));
 
     vector<BenchmarkRecord> records;
 
     for (auto& db : dbs) {
-        BenchmarkRecord insertData{db->type, "insert"};
-        BenchmarkRecord updateData{db->type, "update"};
-        BenchmarkRecord getData   {db->type, "get"   };
-        BenchmarkRecord removeData{db->type, "remove"};
+        BenchmarkRecord insertData{db->typeName(), "insert"};
+        BenchmarkRecord updateData{db->typeName(), "update"};
+        BenchmarkRecord getData   {db->typeName(), "get"   };
+        BenchmarkRecord removeData{db->typeName(), "remove"};
 
         for (int i = 0; i < 100; i++) {
             string key = utils::randHash();
@@ -86,7 +86,7 @@ vector<BenchmarkRecord> runBenchmark() {
 
     vector<pair<BenchmarkRecord, string>> sizeRecords;
     for (auto& db : dbs)
-        sizeRecords.push_back({{db->type, "size"}, db->filepath});
+        sizeRecords.push_back({{db->typeName(), "size"}, db->filepath});
     dbs.clear(); // delete and close all dbs so we can get final size
 
     for (auto& sizeRecord : sizeRecords) {
