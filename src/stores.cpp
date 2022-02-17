@@ -1,5 +1,6 @@
 #include <optional>
 #include <memory>
+#include <filesystem>
 
 #include <SQLiteCpp/SQLiteCpp.h>
 #include <SQLiteCpp/VariadicBind.h>
@@ -25,7 +26,11 @@ namespace stores {
         optional<SQLite::Statement> removeStmt;
 
     public:
-        SQLite3Store(const string& filepath) : Store(filepath),
+        SQLite3Store(const string& filepath, bool deleteIfExists = false) :
+            Store(( // comma operator hack to delete before construction
+                deleteIfExists ? std::filesystem::remove_all(filepath) : 0,
+                filepath
+            )),
             db(filepath, SQLite::OPEN_READWRITE|SQLite::OPEN_CREATE) {
 
             string sql = 
@@ -160,7 +165,8 @@ namespace stores {
         }
 
     public:
-        LevelDBStore(const string& filepath) : Store(filepath) {
+        LevelDBStore(const string& filepath, bool deleteIfExists = false) : Store(filepath) {
+            if (deleteIfExists) std::filesystem::remove_all(filepath);
             leveldb::Options options;
             options.create_if_missing = true;
             
@@ -206,7 +212,8 @@ namespace stores {
         }
 
     public:
-        RocksDBStore(const string& filepath) : Store(filepath) {
+        RocksDBStore(const string& filepath, bool deleteIfExists = false) : Store(filepath) {
+            if (deleteIfExists) std::filesystem::remove_all(filepath);
             rocksdb::Options options;
             options.create_if_missing = true;
             
@@ -261,7 +268,9 @@ namespace stores {
         }
 
     public:
-        BerkeleyDBStore(const string& filepath) : Store(filepath), db(NULL, 0) {
+        BerkeleyDBStore(const string& filepath, bool deleteIfExists) : Store(filepath), db(NULL, 0) {
+            if (deleteIfExists) std::filesystem::remove_all(filepath);
+            
             int s = db.open(NULL, filepath.c_str(), NULL, DB_BTREE, DB_CREATE, 0);
             checkStatus(s);
         }
@@ -302,13 +311,13 @@ namespace stores {
     unique_ptr<Store> getStore(Type type, string filepath, bool deleteIfExists) {
         switch (type) {
             case Type::SQLite3:
-                return make_unique<stores::SQLite3Store>(filepath);
+                return make_unique<stores::SQLite3Store>(filepath, deleteIfExists);
             case Type::LevelDB:
-                return make_unique<stores::LevelDBStore>(filepath);
+                return make_unique<stores::LevelDBStore>(filepath, deleteIfExists);
             case Type::RocksDB:
-                return make_unique<stores::RocksDBStore>(filepath);
+                return make_unique<stores::RocksDBStore>(filepath, deleteIfExists);
             case Type::BerkeleyDB:
-                return make_unique<stores::BerkeleyDBStore>(filepath);
+                return make_unique<stores::BerkeleyDBStore>(filepath, deleteIfExists);
             default:
                 throw std::runtime_error("Unknown type: "s + typeNames[(int) type]);
         }
