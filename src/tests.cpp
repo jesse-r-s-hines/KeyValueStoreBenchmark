@@ -17,10 +17,9 @@ namespace tests {
         filesystem::remove_all("out/tests");
         filesystem::create_directories("out/tests/");
 
-        vector<unique_ptr<stores::Store>> dbs{}; // can't use initializer list with unique_ptr for some reason
-        for (stores::Type type : stores::types) {
+        vector<unique_ptr<stores::Store>> dbs{};
+        for (stores::Type type : stores::types)
             dbs.push_back(stores::getStore(type, "out/tests/"s + stores::typeNames[(int) type] + ".db", true));
-        }
 
         SUBCASE("Basic") {
             for (auto& db : dbs) {
