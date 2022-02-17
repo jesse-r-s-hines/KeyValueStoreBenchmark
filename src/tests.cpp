@@ -14,14 +14,13 @@ namespace tests {
     namespace filesystem = std::filesystem;
 
     TEST_CASE("Test Stores") {
-        std::filesystem::remove_all("out/tests");
-        std::filesystem::create_directories("out/tests/");
+        filesystem::remove_all("out/tests");
+        filesystem::create_directories("out/tests/");
 
         vector<unique_ptr<stores::Store>> dbs{}; // can't use initializer list with unique_ptr for some reason
-        dbs.push_back(stores::getStore(stores::Type::SQLite3, "out/tests/sqlite3.db", false));
-        dbs.push_back(stores::getStore(stores::Type::LevelDB, "out/tests/leveldb.db", false));
-        dbs.push_back(stores::getStore(stores::Type::RocksDB, "out/tests/rocksdb.db", false));
-        dbs.push_back(stores::getStore(stores::Type::BerkeleyDB, "out/tests/berkeleydb.db", false));
+        for (stores::Type type : stores::types) {
+            dbs.push_back(stores::getStore(type, "out/tests/"s + stores::typeNames[(int) type] + ".db", true));
+        }
 
         SUBCASE("Basic") {
             for (auto& db : dbs) {
