@@ -5,14 +5,14 @@
 
 namespace stores {
     enum class Type {
-        SQLite3, LevelDB, RocksDB, BerkeleyDB
+        SQLite3, LevelDB, RocksDB, BerkeleyDB, FlatFolder
     };
     static const int myvar = 1;
     static const std::vector<Type> types __attribute__((unused)) {
-        Type::SQLite3, Type::LevelDB, Type::RocksDB, Type::BerkeleyDB
+        Type::SQLite3, Type::LevelDB, Type::RocksDB, Type::BerkeleyDB, Type::FlatFolder
     };
     static const std::vector<std::string> typeNames __attribute__((unused)) {
-        "SQLite3", "LevelDB", "RocksDB", "BerkeleyDB"
+        "SQLite3", "LevelDB", "RocksDB", "BerkeleyDB", "FlatFolder"
     };
 
     /**

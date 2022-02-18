@@ -1,6 +1,7 @@
 #include <optional>
 #include <memory>
 #include <filesystem>
+#include <fstream>
 
 #include <SQLiteCpp/SQLiteCpp.h>
 #include <SQLiteCpp/VariadicBind.h>
@@ -12,6 +13,7 @@
 
 namespace stores {
     using std::string, std::optional, std::unique_ptr, std::make_unique;
+    using std::ofstream, std::ifstream;
     namespace filesystem = std::filesystem;
     using namespace std::string_literals;
 
@@ -309,6 +311,52 @@ namespace stores {
         }
     };
 
+    /**
+     * Stores each record as a file with its key as the name.
+     */
+    class FlatFolderStore : public Store {
+        std::string getPath(const string& key) {
+            return filepath + "/" + key;
+        }
+
+    public:
+        FlatFolderStore(const string& filepath, bool deleteIfExists = false) : Store(filepath) {
+            if (deleteIfExists) filesystem::remove_all(filepath);
+            filesystem::create_directories(filepath);
+        }
+
+        Type type() { return Type::FlatFolder; }
+
+        void insert(const string& key, const string& value) override {
+            ofstream file(getPath(key), ifstream::out|ofstream::binary);
+            file.write(value.c_str(), value.size());
+        }
+
+        void update(const string& key, const string& value) override {
+            insert(key, value);
+        }
+
+        string get(const string& key) override {
+            ifstream file(getPath(key), ifstream::in|ifstream::binary|ifstream::ate); // open at end of file
+            if (!file.is_open())
+                throw std::runtime_error("Key \""s + key + "\" doesn't exit");
+
+            // get pos (which is size of file since we're at the end)
+            // would building a buffer be better as it wouldn't have a second seek? (but we'd do more memory allocations)
+            auto size = file.tellg();
+            file.seekg(0, ifstream::beg);
+            string value;
+            value.resize(size);
+            file.read(&value[0], size);
+            return value;
+        }
+
+        void remove(const string& key) override {
+            filesystem::remove(getPath(key));
+        }
+    };
+
+
     unique_ptr<Store> getStore(Type type, string filepath, bool deleteIfExists) {
         switch (type) {
             case Type::SQLite3:
@@ -319,6 +367,8 @@ namespace stores {
                 return make_unique<stores::RocksDBStore>(filepath, deleteIfExists);
             case Type::BerkeleyDB:
                 return make_unique<stores::BerkeleyDBStore>(filepath, deleteIfExists);
+            case Type::FlatFolder:
+                return make_unique<stores::FlatFolderStore>(filepath, deleteIfExists);
         }
         throw std::runtime_error("Unknown type"); // Shouldn't be possible
     };
