@@ -2,6 +2,7 @@
 #include <memory>
 #include <filesystem>
 #include <fstream>
+#include <map>
 
 #include <SQLiteCpp/SQLiteCpp.h>
 #include <SQLiteCpp/VariadicBind.h>
@@ -18,7 +19,7 @@ namespace stores {
     using namespace std::string_literals;
 
     Store::Store(const string& filepath) : filepath(filepath) {};
-    std::string Store::typeName() { return typeNames[(int) this->type()]; };
+    std::string Store::typeName() { return types.at(this->type()); };
 
     class SQLite3Store : public Store {
         SQLite::Database db;

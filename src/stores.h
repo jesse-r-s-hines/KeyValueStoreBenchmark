@@ -1,18 +1,20 @@
 #pragma once
 #include <string>
 #include <memory>
-#include <vector>
+#include <map>
 
 namespace stores {
     enum class Type {
         SQLite3, LevelDB, RocksDB, BerkeleyDB, FlatFolder
     };
-    static const int myvar = 1;
-    static const std::vector<Type> types __attribute__((unused)) {
-        Type::SQLite3, Type::LevelDB, Type::RocksDB, Type::BerkeleyDB, Type::FlatFolder
-    };
-    static const std::vector<std::string> typeNames __attribute__((unused)) {
-        "SQLite3", "LevelDB", "RocksDB", "BerkeleyDB", "FlatFolder"
+    
+    /** Maps all the store Types to a string name */
+    const std::map<Type, std::string> types __attribute__((unused)) {
+        {Type::SQLite3, "SQLite3"},
+        {Type::LevelDB, "LevelDB"},
+        {Type::RocksDB, "RocksDB"},
+        {Type::BerkeleyDB, "BerkeleyDB"},
+        {Type::FlatFolder, "FlatFolder"},
     };
 
     /**

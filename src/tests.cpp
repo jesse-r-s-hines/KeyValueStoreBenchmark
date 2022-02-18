@@ -18,8 +18,8 @@ namespace tests {
         filesystem::create_directories("out/tests/");
 
         vector<unique_ptr<stores::Store>> dbs{};
-        for (stores::Type type : stores::types)
-            dbs.push_back(stores::getStore(type, "out/tests/"s + stores::typeNames[(int) type] + ".db", true));
+        for (auto [type, typeName] : stores::types)
+            dbs.push_back(stores::getStore(type, "out/tests/"s + typeName + ".db", true));
 
         SUBCASE("Basic") {
             for (auto& db : dbs) {
@@ -55,8 +55,8 @@ namespace tests {
         filesystem::remove_all("out/tests");
         filesystem::create_directories("out/tests/");
 
-        for (stores::Type type : stores::types) {
-            string filepath = "out/tests/"s + stores::typeNames[(int) type] + ".db";
+        for (auto [type, typeName] : stores::types) {
+            string filepath = "out/tests/"s + typeName + ".db";
             INFO(filepath);
 
             REQUIRE(!filesystem::exists(filepath));
