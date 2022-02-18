@@ -41,13 +41,17 @@ void tag_invoke(const json::value_from_tag&, json::value& jv, BenchmarkRecord co
     };
 }
 
+std::string getTypePath(stores::Type type) {
+    return "out/dbs/"s + stores::typeNames[(int) type] + ".db";
+};
+
 vector<BenchmarkRecord> runBenchmark() {
     std::filesystem::remove_all("out/dbs");
     std::filesystem::create_directories("out/dbs");
 
     vector<unique_ptr<stores::Store>> dbs{};
     for (stores::Type type : stores::types)
-        dbs.push_back(stores::getStore(type, "out/dbs/"s + stores::typeNames[(int) type] + ".db", true));
+        dbs.push_back(stores::getStore(type, getTypePath(type), true));
 
     vector<BenchmarkRecord> records;
 
