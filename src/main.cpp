@@ -62,7 +62,7 @@ vector<BenchmarkRecord> runBenchmark() {
         BenchmarkRecord removeData{store->typeName(), "remove"};
 
         for (int i = 0; i < 100; i++) {
-            string key = utils::randHash();
+            string key = utils::randHash(32);
             string blob = utils::randBlob(1024);
 
             auto time = utils::timeIt([&]() { store->insert(key, blob); });

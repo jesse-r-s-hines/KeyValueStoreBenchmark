@@ -9,7 +9,7 @@ namespace utils {
     template< typename T >
     std::string intToHex(T i);
 
-    std::string randHash();
+    std::string randHash(int size);
 
     std::string randBlob(size_t size);
 

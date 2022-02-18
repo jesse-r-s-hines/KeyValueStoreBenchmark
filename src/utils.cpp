@@ -9,6 +9,7 @@
 #include "utils.h"
 
 namespace utils {
+    using std::string;
     namespace process = boost::process;
     namespace chrono = std::chrono;
 
@@ -16,28 +17,30 @@ namespace utils {
     std::mt19937 randGen(randomDevice());
 
     template< typename T >
-    std::string intToHex(T i, int width) {
+    string intToHex(T i, int width) {
         std::stringstream stream;
         stream << std::setfill('0') << std::setw(width) << std::hex << i;
         return stream.str();
     }
 
     template< typename T >
-    std::string intToHex(T i) {
+    string intToHex(T i) {
         return intToHex(i, sizeof(T)*2);
     }
 
-    std::string randHash() {
-        std::uniform_int_distribution<long long unsigned> randNum(0, 0xFFFF'FFFF'FFFF'FFFF);
-        return intToHex(randNum(randGen), 16);
+    string randHash(int size) {
+        std::uniform_int_distribution<unsigned char> randNibble(0x0, 0xF);
+        string hash;
+        hash.resize(size);
+        std::generate(hash.begin(), hash.end(), [&]() { return intToHex(randNibble(randGen), 2)[0]; });
+        return hash;
     }
 
-    std::string randBlob(size_t size) {
-        std::uniform_int_distribution<unsigned char> randChar(0, 10);
-        std::string blob(size, '\0');
-        for (size_t i = 0; i < size; i++) {
-            blob[i] = randChar(randGen);
-        }
+    string randBlob(size_t size) {
+        std::uniform_int_distribution<unsigned char> randChar(0, 0xFF);
+        string blob;
+        blob.resize(size);
+        std::generate(blob.begin(), blob.end(), [&]() { return randChar(randGen); });
         return blob;
     }
 
@@ -48,13 +51,13 @@ namespace utils {
         return chrono::duration_cast<chrono::nanoseconds>(stop - start);
     }
 
-    long long diskUsage(const std::string& path) {
+    long long diskUsage(const string& path) {
         // TODO make a windows version of this?
         process::ipstream out;
         process::child du(process::search_path("du"), "-s", "--block-size=1", path, process::std_out > out);
 
-        std::string outputStr;
-        std::string line;
+        string outputStr;
+        string line;
         while (du.running() && std::getline(out, line) && !line.empty())
             outputStr += line;
         du.wait();
