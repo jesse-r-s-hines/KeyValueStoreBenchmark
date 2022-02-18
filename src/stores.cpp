@@ -318,8 +318,7 @@ namespace stores {
                 return make_unique<stores::RocksDBStore>(filepath, deleteIfExists);
             case Type::BerkeleyDB:
                 return make_unique<stores::BerkeleyDBStore>(filepath, deleteIfExists);
-            default:
-                throw std::runtime_error("Unknown type: "s + typeNames[(int) type]);
         }
+        throw std::runtime_error("Unknown type"); // Shouldn't be possible
     };
 }
