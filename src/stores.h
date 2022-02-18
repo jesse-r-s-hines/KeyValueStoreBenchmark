@@ -12,7 +12,7 @@ namespace stores {
         Type::SQLite3, Type::LevelDB, Type::RocksDB, Type::BerkeleyDB
     };
     static const std::vector<std::string> typeNames __attribute__((unused)) {
-        "sqlite3", "leveldb", "rocksdb", "berkeleydb"
+        "SQLite3", "LevelDB", "RocksDB", "BerkeleyDB"
     };
 
     /**
