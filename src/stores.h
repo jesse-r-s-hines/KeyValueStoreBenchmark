@@ -1,16 +1,17 @@
 #pragma once
 #include <string>
 #include <memory>
-#include <array>
+#include <vector>
 
 namespace stores {
     enum class Type {
         SQLite3, LevelDB, RocksDB, BerkeleyDB
     };
-    static const std::array types {
+    static const int myvar = 1;
+    static const std::vector<Type> types __attribute__((unused)) {
         Type::SQLite3, Type::LevelDB, Type::RocksDB, Type::BerkeleyDB
     };
-    static const std::array<std::string, 4> typeNames {
+    static const std::vector<std::string> typeNames __attribute__((unused)) {
         "sqlite3", "leveldb", "rocksdb", "berkeleydb"
     };
 
