@@ -17,35 +17,35 @@ namespace tests {
         filesystem::remove_all("out/tests");
         filesystem::create_directories("out/tests/");
 
-        vector<unique_ptr<stores::Store>> dbs{};
+        vector<unique_ptr<stores::Store>> stores{};
         for (auto [type, typeName] : stores::types)
-            dbs.push_back(stores::getStore(type, "out/tests/"s + typeName + ".db", true));
+            stores.push_back(stores::getStore(type, "out/tests/"s + typeName, true));
 
         SUBCASE("Basic") {
-            for (auto& db : dbs) {
-                INFO(db->typeName());
+            for (auto& store : stores) {
+                INFO(store->typeName());
 
-                db->insert("key", "value");
-                REQUIRE(db->get("key") == "value");
+                store->insert("key", "value");
+                REQUIRE(store->get("key") == "value");
 
-                db->update("key", "updated");
-                REQUIRE(db->get("key") == "updated");
+                store->update("key", "updated");
+                REQUIRE(store->get("key") == "updated");
 
-                db->remove("key");
+                store->remove("key");
 
-                REQUIRE_THROWS(db->get("key"));
+                REQUIRE_THROWS(store->get("key"));
             }
         }
 
         SUBCASE("Nulls") {
-            for (auto& db : dbs) {
-                INFO(db->typeName());
+            for (auto& store : stores) {
+                INFO(store->typeName());
 
-                db->insert("key", "hello\0world"s);
-                REQUIRE(db->get("key") == "hello\0world"s);
+                store->insert("key", "hello\0world"s);
+                REQUIRE(store->get("key") == "hello\0world"s);
 
-                db->update("key", "\0goodbye\0"s);
-                REQUIRE(db->get("key") == "\0goodbye\0"s);
+                store->update("key", "\0goodbye\0"s);
+                REQUIRE(store->get("key") == "\0goodbye\0"s);
             }
         }
     }
@@ -56,7 +56,7 @@ namespace tests {
         filesystem::create_directories("out/tests/");
 
         for (auto [type, typeName] : stores::types) {
-            string filepath = "out/tests/"s + typeName + ".db";
+            string filepath = "out/tests/"s + typeName;
             INFO(filepath);
 
             REQUIRE(!filesystem::exists(filepath));

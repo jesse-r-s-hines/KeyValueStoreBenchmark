@@ -42,44 +42,44 @@ void tag_invoke(const json::value_from_tag&, json::value& jv, BenchmarkRecord co
 }
 
 std::string getStorePath(std::string name) {
-    return "out/dbs/"s + name + ".db";
+    return "out/stores/"s + name;
 };
 
 vector<BenchmarkRecord> runBenchmark() {
-    std::filesystem::remove_all("out/dbs");
-    std::filesystem::create_directories("out/dbs");
+    std::filesystem::remove_all("out/stores");
+    std::filesystem::create_directories("out/stores");
 
-    vector<unique_ptr<stores::Store>> dbs{};
+    vector<unique_ptr<stores::Store>> stores{};
     for (auto [type, typeName] : stores::types)
-        dbs.push_back(stores::getStore(type, getStorePath(typeName), true));
+        stores.push_back(stores::getStore(type, getStorePath(typeName), true));
 
     vector<BenchmarkRecord> records;
 
-    for (auto& db : dbs) {
-        BenchmarkRecord insertData{db->typeName(), "insert"};
-        BenchmarkRecord updateData{db->typeName(), "update"};
-        BenchmarkRecord getData   {db->typeName(), "get"   };
-        BenchmarkRecord removeData{db->typeName(), "remove"};
+    for (auto& store : stores) {
+        BenchmarkRecord insertData{store->typeName(), "insert"};
+        BenchmarkRecord updateData{store->typeName(), "update"};
+        BenchmarkRecord getData   {store->typeName(), "get"   };
+        BenchmarkRecord removeData{store->typeName(), "remove"};
 
         for (int i = 0; i < 100; i++) {
             string key = utils::randHash();
             string blob = utils::randBlob(1024);
 
-            auto time = utils::timeIt([&]() { db->insert(key, blob); });
+            auto time = utils::timeIt([&]() { store->insert(key, blob); });
             insertData.stats.record(time.count());
 
             blob = utils::randBlob(1024);
-            time = utils::timeIt([&]() { db->update(key, blob); });
+            time = utils::timeIt([&]() { store->update(key, blob); });
             updateData.stats.record(time.count());
 
             string value;
             time = utils::timeIt([&]() {
-                value = db->get(key);
+                value = store->get(key);
             });
             if (value.size() == 0) throw std::runtime_error("DB get failed"); // make sure compiler doe
             getData.stats.record(time.count());
 
-            time = utils::timeIt([&]() { db->remove(key); });
+            time = utils::timeIt([&]() { store->remove(key); });
             removeData.stats.record(time.count());
         }
 
@@ -87,9 +87,9 @@ vector<BenchmarkRecord> runBenchmark() {
     }
 
     vector<pair<BenchmarkRecord, string>> sizeRecords;
-    for (auto& db : dbs)
-        sizeRecords.push_back({{db->typeName(), "size"}, db->filepath});
-    dbs.clear(); // delete and close all dbs so we can get final size
+    for (auto& store : stores)
+        sizeRecords.push_back({{store->typeName(), "size"}, store->filepath});
+    stores.clear(); // delete and close all stores so we can get final size
 
     for (auto& sizeRecord : sizeRecords) {
         sizeRecord.first.stats.record(utils::diskUsage(sizeRecord.second));
