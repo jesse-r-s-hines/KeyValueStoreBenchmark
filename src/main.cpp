@@ -47,7 +47,7 @@ vector<BenchmarkRecord> runBenchmark() {
 
     vector<unique_ptr<stores::Store>> dbs{};
     for (stores::Type type : stores::types)
-        dbs.push_back(stores::getStore(type, "out/"s + stores::typeNames[(int) type] + ".db", true));
+        dbs.push_back(stores::getStore(type, "out/dbs/"s + stores::typeNames[(int) type] + ".db", true));
 
     vector<BenchmarkRecord> records;
 
