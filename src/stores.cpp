@@ -12,6 +12,7 @@
 
 namespace stores {
     using std::string, std::optional, std::unique_ptr, std::make_unique;
+    namespace filesystem = std::filesystem;
     using namespace std::string_literals;
 
     Store::Store(const string& filepath) : filepath(filepath) {};
@@ -28,7 +29,7 @@ namespace stores {
     public:
         SQLite3Store(const string& filepath, bool deleteIfExists = false) :
             Store(( // comma operator hack to delete before construction
-                deleteIfExists ? std::filesystem::remove_all(filepath) : 0,
+                deleteIfExists ? filesystem::remove_all(filepath) : 0,
                 filepath
             )),
             db(filepath, SQLite::OPEN_READWRITE|SQLite::OPEN_CREATE) {
@@ -166,7 +167,7 @@ namespace stores {
 
     public:
         LevelDBStore(const string& filepath, bool deleteIfExists = false) : Store(filepath) {
-            if (deleteIfExists) std::filesystem::remove_all(filepath);
+            if (deleteIfExists) filesystem::remove_all(filepath);
             leveldb::Options options;
             options.create_if_missing = true;
             
@@ -213,7 +214,7 @@ namespace stores {
 
     public:
         RocksDBStore(const string& filepath, bool deleteIfExists = false) : Store(filepath) {
-            if (deleteIfExists) std::filesystem::remove_all(filepath);
+            if (deleteIfExists) filesystem::remove_all(filepath);
             rocksdb::Options options;
             options.create_if_missing = true;
             
@@ -269,7 +270,7 @@ namespace stores {
 
     public:
         BerkeleyDBStore(const string& filepath, bool deleteIfExists) : Store(filepath), db(NULL, 0) {
-            if (deleteIfExists) std::filesystem::remove_all(filepath);
+            if (deleteIfExists) filesystem::remove_all(filepath);
             
             int s = db.open(NULL, filepath.c_str(), NULL, DB_BTREE, DB_CREATE, 0);
             checkStatus(s);
