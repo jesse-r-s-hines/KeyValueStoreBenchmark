@@ -10,6 +10,7 @@
 #include <ctime>
 #include <sstream>
 #include <algorithm>
+#include <cmath>
 
 #include <boost/json/src.hpp>
 #include <boost/uuid/detail/sha1.hpp>
@@ -164,7 +165,23 @@ vector<BenchmarkData> runBenchmark() {
             store->insert(key, value);
         }
 
-        records.insert(records.end(), {insertData, updateData, getData, removeData});
+        path filepath = store->filepath;
+        // Maybe we could keep a count of the exact size? (But updates would complicate that...)
+        size_t dataSize = store->count() * ((sizeRange.min + sizeRange.max) / 2.0);
+        store.reset(); // close the store
+
+        std::cout << typeName << "\n";
+        size_t diskSize = utils::diskUsage(filepath);
+        int spaceEfficiencyPercent = std::round(((double) dataSize / diskSize) * 100);
+
+        std::cout << "diskSize: " << diskSize << "\n";
+        std::cout << "dataSize: " << dataSize << "\n";
+        std::cout << "efficiency: " << spaceEfficiencyPercent << "%\n";
+
+        BenchmarkData spaceData{typeName, "space", sizeRange, countRange};
+        spaceData.stats.record(spaceEfficiencyPercent); // store as percent
+
+        records.insert(records.end(), {insertData, updateData, getData, removeData, spaceData});
     }
 
     return records;
