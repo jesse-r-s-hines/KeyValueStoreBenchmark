@@ -10,6 +10,9 @@
 namespace utils {
     std::string intToHex(long long i, int width);
 
+    /** Random int in range (inclusive) */
+    int randInt(int min, int max);
+
     std::string randHash(int size);
 
     std::string randBlob(size_t size);
