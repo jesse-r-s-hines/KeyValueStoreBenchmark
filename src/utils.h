@@ -4,11 +4,7 @@
 #include <chrono>
 
 namespace utils {
-    template< typename T >
-    std::string intToHex(T i, int width);
-
-    template< typename T >
-    std::string intToHex(T i);
+    std::string intToHex(long long i, int width);
 
     std::string randHash(int size);
 

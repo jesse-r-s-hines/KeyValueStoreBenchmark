@@ -16,23 +16,18 @@ namespace utils {
     std::random_device randomDevice;
     std::mt19937 randGen(randomDevice());
 
-    template< typename T >
-    string intToHex(T i, int width) {
+    string intToHex(long long i, int width) {
         std::stringstream stream;
         stream << std::setfill('0') << std::setw(width) << std::hex << i;
         return stream.str();
-    }
-
-    template< typename T >
-    string intToHex(T i) {
-        return intToHex(i, sizeof(T)*2);
     }
 
     string randHash(int size) {
         std::uniform_int_distribution<unsigned char> randNibble(0x0, 0xF);
         string hash;
         hash.resize(size);
-        std::generate(hash.begin(), hash.end(), [&]() { return intToHex(randNibble(randGen), 2)[0]; });
+        for (int i = 0; i < size; i += 1)
+            hash[i] = intToHex(randNibble(randGen), 1)[0];
         return hash;
     }
 
