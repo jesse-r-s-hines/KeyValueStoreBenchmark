@@ -17,10 +17,11 @@
 #include "doctest/doctest.h"
 #include "tests.cpp"
 
-using std::vector, std::map, std::tuple, std::pair, std::string, std::unique_ptr, std::make_unique;
-using namespace std::string_literals;
 namespace json = boost::json;
 namespace chrono = std::chrono;
+namespace filesystem = std::filesystem;
+using namespace std::string_literals;
+using std::vector, std::map, std::tuple, std::pair, std::string, std::unique_ptr, std::make_unique, filesystem::path;
 
 struct BenchmarkRecord {
     string store;
@@ -41,13 +42,13 @@ void tag_invoke(const json::value_from_tag&, json::value& jv, BenchmarkRecord co
     };
 }
 
-std::string getStorePath(std::string name) {
-    return "out/stores/"s + name;
+path getStorePath(string name) {
+    return path("out") / "stores" / name;
 };
 
 vector<BenchmarkRecord> runBenchmark() {
-    std::filesystem::remove_all("out/stores");
-    std::filesystem::create_directories("out/stores");
+    filesystem::remove_all("out/stores");
+    filesystem::create_directories("out/stores");
 
     vector<unique_ptr<stores::Store>> stores{};
     for (auto [type, typeName] : stores::types)

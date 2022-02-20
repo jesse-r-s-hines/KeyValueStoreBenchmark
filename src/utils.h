@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <functional>
+#include <filesystem>
 #include <chrono>
 
 namespace utils {
@@ -12,7 +13,7 @@ namespace utils {
 
     std::chrono::nanoseconds timeIt(std::function<void()> func);
 
-    long long diskUsage(const std::string& path);
+    long long diskUsage(const std::filesystem::path& filepath);
 
     /** Keeps the average and other statistics. */
     template<typename T>

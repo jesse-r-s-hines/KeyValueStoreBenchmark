@@ -13,13 +13,13 @@
 #include "stores.h"
 
 namespace stores {
-    using std::string, std::optional, std::unique_ptr, std::make_unique, std::to_string, std::size_t;
-    using std::ofstream, std::ifstream;
     namespace filesystem = std::filesystem;
     using namespace std::string_literals;
+    using std::string, std::optional, std::unique_ptr, std::make_unique, std::to_string, std::size_t, filesystem::path;
+    using std::ofstream, std::ifstream;
     using uint = unsigned int;
 
-    Store::Store(const string& filepath) : filepath(filepath) {};
+    Store::Store(const path& filepath) : filepath(filepath) {};
     std::string Store::typeName() { return types.at(this->type()); };
 
     class SQLite3Store : public Store {
@@ -31,7 +31,7 @@ namespace stores {
         optional<SQLite::Statement> removeStmt;
 
     public:
-        SQLite3Store(const string& filepath, bool deleteIfExists = false) :
+        SQLite3Store(const path& filepath, bool deleteIfExists = false) :
             Store(( // comma operator hack to delete before construction
                 deleteIfExists ? filesystem::remove_all(filepath) : 0,
                 filepath
@@ -170,7 +170,7 @@ namespace stores {
         }
 
     public:
-        LevelDBStore(const string& filepath, bool deleteIfExists = false) : Store(filepath) {
+        LevelDBStore(const path& filepath, bool deleteIfExists = false) : Store(filepath) {
             if (deleteIfExists) filesystem::remove_all(filepath);
             leveldb::Options options;
             options.create_if_missing = true;
@@ -217,7 +217,7 @@ namespace stores {
         }
 
     public:
-        RocksDBStore(const string& filepath, bool deleteIfExists = false) : Store(filepath) {
+        RocksDBStore(const path& filepath, bool deleteIfExists = false) : Store(filepath) {
             if (deleteIfExists) filesystem::remove_all(filepath);
             rocksdb::Options options;
             options.create_if_missing = true;
@@ -273,7 +273,7 @@ namespace stores {
         }
 
     public:
-        BerkeleyDBStore(const string& filepath, bool deleteIfExists) : Store(filepath), db(NULL, 0) {
+        BerkeleyDBStore(const path& filepath, bool deleteIfExists) : Store(filepath), db(NULL, 0) {
             if (deleteIfExists) filesystem::remove_all(filepath);
             
             int s = db.open(NULL, filepath.c_str(), NULL, DB_BTREE, DB_CREATE, 0);
@@ -317,12 +317,12 @@ namespace stores {
      * Stores each record as a file with its key as the name.
      */
     class FlatFolderStore : public Store {
-        std::string getPath(const string& key) {
-            return filepath + "/" + key;
+        path getPath(const string& key) {
+            return filepath / key;
         }
 
     public:
-        FlatFolderStore(const string& filepath, bool deleteIfExists = false) : Store(filepath) {
+        FlatFolderStore(const path& filepath, bool deleteIfExists = false) : Store(filepath) {
             if (deleteIfExists) filesystem::remove_all(filepath);
             filesystem::create_directories(filepath);
         }
@@ -381,24 +381,24 @@ namespace stores {
         uint depth;
         size_t keyLen;
 
-        filesystem::path getPath(const string& key) {
+        path getPath(const string& key) {
             if (key.size() != keyLen)
                 throw std::runtime_error("Key \"" + key + "\" not of size " + to_string(keyLen));
 
-            filesystem::path path(filepath);
+            path recordPath(filepath);
             uint i = 0;
             for (; i < (depth - 1) * charsPerLevel; i += charsPerLevel) {
-                path /= key.substr(i, charsPerLevel); // substr does bounds check
+                recordPath /= key.substr(i, charsPerLevel); // substr does bounds check
             }
             if (i < key.size()) {
-                path /= key.substr(i, string::npos);
+                recordPath /= key.substr(i, string::npos);
             }
 
-            return path;
+            return recordPath;
         }
 
     public:
-        NestedFolderStore(const string& filepath,
+        NestedFolderStore(const path& filepath,
             uint charsPerLevel, uint depth, size_t keyLen,
             bool deleteIfExists = false
         ) : Store(filepath),
@@ -412,7 +412,7 @@ namespace stores {
         Type type() { return Type::NestedFolder; }
 
         void insert(const string& key, const string& value) override {
-            filesystem::path path = getPath(key);
+            path path = getPath(key);
             filesystem::create_directories(path.parent_path());
             ofstream file(path, ifstream::out|ofstream::binary);
             file.write(value.c_str(), value.size());
@@ -443,7 +443,7 @@ namespace stores {
         }
     };
 
-    unique_ptr<Store> getStore(Type type, string filepath, bool deleteIfExists) {
+    unique_ptr<Store> getStore(Type type, const path& filepath, bool deleteIfExists) {
         switch (type) {
             case Type::SQLite3:
                 return make_unique<stores::SQLite3Store>(filepath, deleteIfExists);

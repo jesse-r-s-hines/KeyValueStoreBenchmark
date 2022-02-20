@@ -2,6 +2,7 @@
 #include <string>
 #include <memory>
 #include <map>
+#include <filesystem>
 
 namespace stores {
     enum class Type {
@@ -24,14 +25,14 @@ namespace stores {
      */
     class Store {
     public:
-        const std::string filepath;
+        const std::filesystem::path filepath;
 
         /** Get the type of the underlying store */
         virtual Type type() = 0;
         /** Get the type of the underlying store */
         std::string typeName();
 
-        Store(const std::string& filepath);
+        Store(const std::filesystem::path& filepath);
         virtual ~Store() {}
         
         virtual void insert(const std::string& key, const std::string& value) = 0;
@@ -46,5 +47,5 @@ namespace stores {
      * @param filepath Where to save the store
      * @param deleteIfExists Default false. Delete the store's files if they already exist.
      */
-    std::unique_ptr<Store> getStore(Type type, std::string filepath, bool deleteIfExists = false);
+    std::unique_ptr<Store> getStore(Type type, const std::filesystem::path& filepath, bool deleteIfExists = false);
 }

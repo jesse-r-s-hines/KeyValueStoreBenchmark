@@ -3,13 +3,14 @@
 #include <functional>
 #include <chrono>
 #include <iomanip>
+#include <filesystem>
 
 #include <boost/process.hpp>
 
 #include "utils.h"
 
 namespace utils {
-    using std::string;
+    using std::string, std::filesystem::path;
     namespace process = boost::process;
     namespace chrono = std::chrono;
 
@@ -46,10 +47,10 @@ namespace utils {
         return chrono::duration_cast<chrono::nanoseconds>(stop - start);
     }
 
-    long long diskUsage(const string& path) {
+    long long diskUsage(const path& filepath) {
         // TODO make a windows version of this?
         process::ipstream out;
-        process::child du(process::search_path("du"), "-s", "--block-size=1", path, process::std_out > out);
+        process::child du(process::search_path("du"), "-s", "--block-size=1", filepath.native(), process::std_out > out);
 
         string outputStr;
         string line;

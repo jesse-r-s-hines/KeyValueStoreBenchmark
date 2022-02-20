@@ -10,9 +10,9 @@
 #include "utils.h"
 
 namespace tests {
-    using std::unique_ptr, std::make_unique, std::vector, std::array, std::pair, std::string;
-    using namespace std::string_literals;
     namespace filesystem = std::filesystem;
+    using namespace std::string_literals;
+    using std::unique_ptr, std::make_unique, std::vector, std::array, std::pair, std::string, filesystem::path;
 
     TEST_CASE("Test Stores") {
         filesystem::remove_all("out/tests");
@@ -20,7 +20,7 @@ namespace tests {
 
         vector<unique_ptr<stores::Store>> stores{};
         for (auto [type, typeName] : stores::types)
-            stores.push_back(stores::getStore(type, "out/tests/"s + typeName, true));
+            stores.push_back(stores::getStore(type, path("out") / "tests" / typeName, true));
 
         SUBCASE("Basic") {
             for (auto& store : stores) {
@@ -59,7 +59,7 @@ namespace tests {
         filesystem::create_directories("out/tests/");
 
         for (auto [type, typeName] : stores::types) {
-            string filepath = "out/tests/"s + typeName;
+            string filepath = path("out") / "tests" / typeName;
             INFO(filepath);
             string key = utils::randHash(32); 
 
@@ -91,7 +91,7 @@ namespace tests {
 
         vector<unique_ptr<stores::Store>> stores{};
         for (auto [type, typeName] : stores::types)
-            stores.push_back(stores::getStore(type, "out/tests/"s + typeName, true));
+            stores.push_back(stores::getStore(type, path("out") / "tests" / typeName, true));
 
         for (auto& store : stores) {
             for (int i = 0; i < 25; i++) {
