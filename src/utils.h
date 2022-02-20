@@ -6,6 +6,7 @@
 #include <map>
 #include <algorithm>
 #include <type_traits>
+#include <random>
 
 namespace utils {
     std::string intToHex(long long i, int width);
@@ -19,9 +20,18 @@ namespace utils {
         return ss.str();
     };
 
+    template<typename T>
+    struct Range { T min; T max; };
 
-    /** Random int in range (inclusive) */
-    int randInt(int min, int max);
+    extern std::random_device randomDevice;
+    extern std::mt19937 randGen;
+
+    /** Random int in range on interval (inclusive) */
+    template<typename T>
+    T randInt(T min, T max) {
+        std::uniform_int_distribution<T> randRange(min, max);
+        return randRange(randGen);
+    }
 
     std::string randHash(int size);
 
@@ -49,9 +59,6 @@ namespace utils {
         (std::for_each(rest.begin(), rest.end(), [&](auto& pair) { rtrn[pair.first] = pair.second; }), ...);
         return rtrn;
     };
-
-    template<typename T>
-    struct Range { T min; T max; };
 
     /** Keeps the average and other statistics. */
     template<typename T>

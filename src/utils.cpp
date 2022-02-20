@@ -24,11 +24,6 @@ namespace utils {
         return stream.str();
     }
 
-    int randInt(int min, int max) {
-        std::uniform_int_distribution<int> randRange(min, max);
-        return randRange(randGen);
-    }
-
     string randHash(int size) {
         std::uniform_int_distribution<unsigned char> randNibble(0x0, 0xF);
         string hash;
