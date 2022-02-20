@@ -19,14 +19,14 @@ namespace stores {
     public:
         const std::filesystem::path filepath;
 
+        Store(const std::filesystem::path& filepath);
+        virtual ~Store() {}
+
         /** Get the type of the underlying store */
         Type type();
         /** Get the type of the underlying store */
         std::string typeName();
 
-        Store(const std::filesystem::path& filepath);
-        virtual ~Store() {}
-        
         virtual void insert(const std::string& key, const std::string& value) = 0;
         virtual void update(const std::string& key, const std::string& value) = 0;
         virtual std::string get(const std::string& key) = 0;
@@ -37,7 +37,6 @@ namespace stores {
      * Factor to create a Store of the given type
      * @param type The type of store to create
      * @param filepath Where to save the store
-     * @param deleteIfExists Default false. Delete the store's files if they already exist.
      */
-    std::unique_ptr<Store> getStore(Type type, const std::filesystem::path& filepath, bool deleteIfExists = false);
+    std::unique_ptr<Store> getStore(Type type, const std::filesystem::path& filepath);
 }

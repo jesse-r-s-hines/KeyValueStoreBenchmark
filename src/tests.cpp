@@ -22,7 +22,7 @@ namespace tests {
 
         vector<unique_ptr<stores::Store>> stores{};
         for (auto [type, typeName] : stores::types)
-            stores.push_back(stores::getStore(type, path("out") / "tests" / typeName, true));
+            stores.push_back(stores::getStore(type, path("out") / "tests" / typeName));
 
         SUBCASE("Basic") {
             for (auto& store : stores) {
@@ -56,7 +56,7 @@ namespace tests {
     }
 
 
-    TEST_CASE("Test deleteIfExists") {
+    TEST_CASE("Test deletes if exists") {
         filesystem::remove_all("out/tests");
         filesystem::create_directories("out/tests/");
 
@@ -67,7 +67,7 @@ namespace tests {
 
             REQUIRE(!filesystem::exists(filepath));
             { // create the store, and then close it.
-                auto store = stores::getStore(type, filepath, true);
+                auto store = stores::getStore(type, filepath);
                 REQUIRE(store->filepath == filepath);
 
                 store->insert(key, "value");
@@ -75,12 +75,7 @@ namespace tests {
             REQUIRE(filesystem::exists(filepath));
 
             {
-                auto store = stores::getStore(type, filepath, false);
-                REQUIRE(store->get(key) == "value");
-            }
-
-            {
-                auto store = stores::getStore(type, filepath, true);
+                auto store = stores::getStore(type, filepath);
                 REQUIRE_THROWS(store->get(key)); // We wiped the database
             }
         }
@@ -93,7 +88,7 @@ namespace tests {
 
         vector<unique_ptr<stores::Store>> stores{};
         for (auto [type, typeName] : stores::types)
-            stores.push_back(stores::getStore(type, path("out") / "tests" / typeName, true));
+            stores.push_back(stores::getStore(type, path("out") / "tests" / typeName));
 
         for (auto& store : stores) {
             for (int i = 0; i < 25; i++) {

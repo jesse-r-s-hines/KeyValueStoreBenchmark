@@ -32,9 +32,9 @@ namespace stores {
         optional<SQLite::Statement> removeStmt;
 
     public:
-        SQLite3Store(const path& filepath, bool deleteIfExists = false) :
+        SQLite3Store(const path& filepath) :
             Store(( // comma operator hack to delete before construction
-                deleteIfExists ? filesystem::remove_all(filepath) : 0,
+                filesystem::remove_all(filepath),
                 filepath
             )),
             db(filepath, SQLite::OPEN_READWRITE|SQLite::OPEN_CREATE) {
@@ -169,8 +169,8 @@ namespace stores {
         }
 
     public:
-        LevelDBStore(const path& filepath, bool deleteIfExists = false) : Store(filepath) {
-            if (deleteIfExists) filesystem::remove_all(filepath);
+        LevelDBStore(const path& filepath) : Store(filepath) {
+            filesystem::remove_all(filepath);
             leveldb::Options options;
             options.create_if_missing = true;
             
@@ -214,8 +214,8 @@ namespace stores {
         }
 
     public:
-        RocksDBStore(const path& filepath, bool deleteIfExists = false) : Store(filepath) {
-            if (deleteIfExists) filesystem::remove_all(filepath);
+        RocksDBStore(const path& filepath) : Store(filepath) {
+            filesystem::remove_all(filepath);
             rocksdb::Options options;
             options.create_if_missing = true;
             
@@ -268,8 +268,8 @@ namespace stores {
         }
 
     public:
-        BerkeleyDBStore(const path& filepath, bool deleteIfExists) : Store(filepath), db(NULL, 0) {
-            if (deleteIfExists) filesystem::remove_all(filepath);
+        BerkeleyDBStore(const path& filepath) : Store(filepath), db(NULL, 0) {
+            filesystem::remove_all(filepath);
             
             int s = db.open(NULL, filepath.c_str(), NULL, DB_BTREE, DB_CREATE, 0);
             checkStatus(s);
@@ -315,8 +315,8 @@ namespace stores {
         }
 
     public:
-        FlatFolderStore(const path& filepath, bool deleteIfExists = false) : Store(filepath) {
-            if (deleteIfExists) filesystem::remove_all(filepath);
+        FlatFolderStore(const path& filepath) : Store(filepath) {
+            filesystem::remove_all(filepath);
             filesystem::create_directories(filepath);
         }
 
@@ -389,14 +389,12 @@ namespace stores {
         }
 
     public:
-        NestedFolderStore(const path& filepath,
-            uint charsPerLevel, uint depth, size_t keyLen,
-            bool deleteIfExists = false
-        ) : Store(filepath),
+        NestedFolderStore(const path& filepath, uint charsPerLevel, uint depth, size_t keyLen) :
+            Store(filepath),
             charsPerLevel(charsPerLevel),
             depth(depth == 0 ? keyLen / charsPerLevel + (keyLen % charsPerLevel != 0) : depth),
             keyLen(keyLen) {
-            if (deleteIfExists) filesystem::remove_all(filepath);
+            filesystem::remove_all(filepath);
             filesystem::create_directories(filepath);
         }
 
@@ -446,23 +444,23 @@ namespace stores {
         return result;
     }();
 
-    unique_ptr<Store> getStore(Type type, const path& filepath, bool deleteIfExists) {
+    unique_ptr<Store> getStore(Type type, const path& filepath) {
         switch (type) {
             case Type::SQLite3:
-                return make_unique<stores::SQLite3Store>(filepath, deleteIfExists);
+                return make_unique<stores::SQLite3Store>(filepath);
             case Type::LevelDB:
-                return make_unique<stores::LevelDBStore>(filepath, deleteIfExists);
+                return make_unique<stores::LevelDBStore>(filepath);
             case Type::RocksDB:
-                return make_unique<stores::RocksDBStore>(filepath, deleteIfExists);
+                return make_unique<stores::RocksDBStore>(filepath);
             case Type::BerkeleyDB:
-                return make_unique<stores::BerkeleyDBStore>(filepath, deleteIfExists);
+                return make_unique<stores::BerkeleyDBStore>(filepath);
             case Type::FlatFolder:
-                return make_unique<stores::FlatFolderStore>(filepath, deleteIfExists);
+                return make_unique<stores::FlatFolderStore>(filepath);
             case Type::NestedFolder:
                 // using 32 char hash (128) so we don't have to worry about collisions
                 // 3 levels of nesting with 2 chars and a max of 10,000,000 records should have 2 levels with 265
                 // folders and and about 142 files at the lowest level on average.
-                return make_unique<stores::NestedFolderStore>(filepath, 2, 3, 32, deleteIfExists);
+                return make_unique<stores::NestedFolderStore>(filepath, 2, 3, 32);
         }
         throw std::runtime_error("Unknown type"); // Shouldn't be possible
     };

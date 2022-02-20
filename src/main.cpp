@@ -54,7 +54,7 @@ vector<BenchmarkRecord> runBenchmark() {
 
     vector<unique_ptr<stores::Store>> stores{};
     for (auto [type, typeName] : stores::types)
-        stores.push_back(stores::getStore(type, getStorePath(typeName), true));
+        stores.push_back(stores::getStore(type, getStorePath(typeName)));
 
     vector<BenchmarkRecord> records;
 
