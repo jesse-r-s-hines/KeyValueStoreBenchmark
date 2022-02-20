@@ -4,13 +4,14 @@
 #include <chrono>
 #include <iomanip>
 #include <filesystem>
+#include <vector>
 
 #include <boost/process.hpp>
 
 #include "utils.h"
 
 namespace utils {
-    using std::string, std::filesystem::path;
+    using std::string, std::filesystem::path, std::vector;
     namespace process = boost::process;
     namespace chrono = std::chrono;
 
@@ -64,6 +65,15 @@ namespace utils {
         du.wait();
 
         return std::stol(outputStr);
+    }
+
+    string prettySizeName(size_t size) {
+        vector<string> units{"B", "KiB", "MiB", "GiB"};
+        size_t i = 0;
+        for (; size > 1024 && i < units.size(); i++) {
+            size /= 1024;
+        }
+        return std::to_string(size) + units[i];
     }
 }
 

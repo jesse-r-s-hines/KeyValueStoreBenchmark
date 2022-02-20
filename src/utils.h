@@ -19,6 +19,7 @@ namespace utils {
         return ss.str();
     };
 
+
     /** Random int in range (inclusive) */
     int randInt(int min, int max);
 
@@ -26,9 +27,18 @@ namespace utils {
 
     std::string randBlob(size_t size);
 
+
     std::chrono::nanoseconds timeIt(std::function<void()> func);
 
+
+    const size_t KiB __attribute__((unused)) = 1024;
+    const size_t MiB __attribute__((unused)) = 1024 * KiB;
+    const size_t GiB __attribute__((unused)) = 1024 * MiB;
+
     long long diskUsage(const std::filesystem::path& filepath);
+
+    /** Convert is in bytes to human readable string */
+    std::string prettySizeName(size_t size);
 
     /**
      * Returns a new map that contains values of all the given maps.
