@@ -321,7 +321,7 @@ namespace stores {
         }
 
         void _insert(const string& key, const string& value) override {
-            ofstream file(getPath(key), ifstream::out|ofstream::binary);
+            ofstream file(getPath(key), ofstream::out|ofstream::binary|ofstream::trunc);
             file.write(value.c_str(), value.size());
         }
 
@@ -401,7 +401,7 @@ namespace stores {
         void _insert(const string& key, const string& value) override {
             path path = getPath(key);
             filesystem::create_directories(path.parent_path());
-            ofstream file(path, ifstream::out|ofstream::binary);
+            ofstream file(path, ofstream::out|ofstream::binary|ofstream::trunc);
             file.write(value.c_str(), value.size());
         }
 
