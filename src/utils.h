@@ -11,15 +11,6 @@
 namespace utils {
     std::string intToHex(long long i, int width);
 
-    /** Converts a boost digest into a hex string */
-    template<typename HashDigest>
-    std::string digestToString(HashDigest digest) {
-        std::stringstream ss;
-        for (auto part : digest)
-            ss << std::setfill('0') << std::setw(sizeof(part) * 2) << std::hex << part;
-        return ss.str();
-    };
-
     template<typename T>
     struct Range { T min; T max; };
 
