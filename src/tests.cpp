@@ -1,6 +1,7 @@
 #include <iostream>
 #include <filesystem>
 #include <memory>
+#include <map>
 #include <string>
 
 #define DOCTEST_CONFIG_IMPLEMENT
@@ -12,7 +13,8 @@
 namespace tests {
     namespace filesystem = std::filesystem;
     using namespace std::string_literals;
-    using std::unique_ptr, std::make_unique, std::vector, std::array, std::pair, std::string, filesystem::path;
+    using std::unique_ptr, std::make_unique, std::vector, std::map, std::array, std::pair, std::string;
+    using filesystem::path;
 
     TEST_CASE("Test Stores") {
         filesystem::remove_all("out/tests");
@@ -102,5 +104,16 @@ namespace tests {
                 REQUIRE(store->get(key) == value);
             }
         }
+    }
+
+    TEST_CASE("Merge maps") {
+        map<string, int> map1{{"A", 1}, {"B", 2}};
+        map<string, int> map2{{"C", 3}};
+        map<string, int> map3{{"A", 0}};
+        map<string, int> expected{{"A", 0}, {"B", 2}, {"C", 3}};
+
+        REQUIRE(utils::merge(map1, map2, map3) == expected);
+        REQUIRE(utils::merge(map1) == map1);
+
     }
 }

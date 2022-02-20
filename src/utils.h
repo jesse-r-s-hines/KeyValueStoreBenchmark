@@ -3,6 +3,8 @@
 #include <functional>
 #include <filesystem>
 #include <chrono>
+#include <map>
+#include <type_traits>
 
 namespace utils {
     std::string intToHex(long long i, int width);
@@ -14,6 +16,24 @@ namespace utils {
     std::chrono::nanoseconds timeIt(std::function<void()> func);
 
     long long diskUsage(const std::filesystem::path& filepath);
+
+    template<typename T, typename... Ts>
+    using AllSame = std::enable_if_t<std::conjunction_v<std::is_same<T, Ts>...>>;
+
+    template<typename K, typename V>
+    std::map<K, V> merge(const std::map<K, V>& first) {
+        return first;
+    }
+
+    /**
+     * Returns a new map that contains values of all the given maps.
+     */
+    template<typename K, typename V, typename... Maps, typename = AllSame<std::map<K, V>, Maps...>>
+    std::map<K, V> merge(const std::map<K, V>& first, const Maps&... rest) {
+        std::map<K, V> rtrn = first;
+        for (auto& [key, value] : merge(rest...)) rtrn[key] = value;
+        return rtrn;
+    }
 
     /** Keeps the average and other statistics. */
     template<typename T>
