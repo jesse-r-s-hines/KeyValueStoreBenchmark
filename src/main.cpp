@@ -7,6 +7,8 @@
 #include <map>
 #include <tuple>
 #include <iomanip>
+#include <ctime>
+#include <sstream>
 
 #include <boost/json/src.hpp>
 
@@ -110,7 +112,11 @@ int main(int argc, char** argv) {
 
     vector<BenchmarkRecord> records = runBenchmark();
 
-    string outFileName = "out/benchmark.json";
+    const std::time_t now = chrono::system_clock::to_time_t(chrono::system_clock::now());
+    std::stringstream nowStr;
+    nowStr << std::put_time(std::localtime(&now), "%Y%m%d%H%M%S");
+
+    path outFileName = path("out") / ("benchmark-"s + nowStr.str() + ".json");
     std::ofstream output;
     output.open(outFileName);
 
@@ -119,6 +125,8 @@ int main(int argc, char** argv) {
         output << "    " << json::value_from(records[i]) << (i < records.size() - 1 ? "," : "") << "\n";
     }
     output << "]\n";
+
     output.close();
-    std::cout << "Benchmark written to " << std::quoted(outFileName) << "\n";
+
+    std::cout << "Benchmark written to " << std::quoted(outFileName.native()) << "\n";
 }
