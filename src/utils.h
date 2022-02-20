@@ -39,7 +39,7 @@ namespace utils {
     long long diskUsage(const std::filesystem::path& filepath);
 
     /** Convert is in bytes to human readable string */
-    std::string prettySizeName(size_t size);
+    std::string prettySize(std::size_t size);
 
     /**
      * Returns a new map that contains values of all the given maps.

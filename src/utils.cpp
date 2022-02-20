@@ -5,6 +5,8 @@
 #include <iomanip>
 #include <filesystem>
 #include <vector>
+#include <cmath>
+#include <algorithm>
 
 #include <boost/process.hpp>
 
@@ -62,13 +64,17 @@ namespace utils {
         return std::stol(outputStr);
     }
 
-    string prettySizeName(size_t size) {
+    string prettySize(size_t size) {
         vector<string> units{"B", "KiB", "MiB", "GiB"};
-        size_t i = 0;
-        for (; size > 1024 && i < units.size(); i++) {
-            size /= 1024;
-        }
-        return std::to_string(size) + units[i];
+        int unitI = std::min<size_t>(std::log(size) / std::log(1024), units.size());
+        int unitSize = std::pow(1024, unitI);
+
+        double sizeInUnit = size / ((double) unitSize);
+        int leftOfDecimal = std::log(sizeInUnit) / std::log(10);
+
+        std::stringstream ss;
+        ss << std::setprecision(leftOfDecimal + 2) << sizeInUnit << units[unitI];
+        return ss.str();
     }
 }
 
