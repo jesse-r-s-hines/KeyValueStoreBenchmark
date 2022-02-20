@@ -30,7 +30,7 @@ using std::vector, std::map, std::tuple, std::pair, std::string, filesystem::pat
 using utils::Range, utils::Stats, stores::Store, utils::KiB, utils::MiB, utils::GiB;
 using StorePtr = std::unique_ptr<stores::Store>;
 
-struct BenchmarkRecord {
+struct BenchmarkData {
     string store;
     string op;
     Range<size_t> size;
@@ -39,7 +39,7 @@ struct BenchmarkRecord {
 };
 
 /** Custom boost JSON conversion. */
-void tag_invoke(const json::value_from_tag&, json::value& jv, BenchmarkRecord const& r) {
+void tag_invoke(const json::value_from_tag&, json::value& jv, BenchmarkData const& r) {
     jv = {
         {"store", r.store},
         {"op", r.op},
@@ -114,18 +114,18 @@ StorePtr initStore(stores::Type type, size_t recordCount, Range<size_t> sizeRang
     return store;
 }
 
-vector<BenchmarkRecord> runBenchmark() {
+vector<BenchmarkData> runBenchmark() {
     filesystem::remove_all("out/stores");
     filesystem::create_directories("out/stores");
 
-    vector<BenchmarkRecord> records;
+    vector<BenchmarkData> records;
 
     for (auto sizeRange : sizeRanges)
     for (auto countRange : countRanges)
     for (auto [type, typeName] : stores::types) {
         StorePtr store = initStore(type, countRange.min, sizeRange);
 
-        BenchmarkRecord insertData{typeName, "insert", sizeRange, countRange};
+        BenchmarkData insertData{typeName, "insert", sizeRange, countRange};
         for (int rep = 0; rep < REPEATS; rep++) {
             if (store->count() >= countRange.max) { // on small sizes repeat may be more than size range
                 store.reset(); // close the store first (LevelDB has a lock)
@@ -137,7 +137,7 @@ vector<BenchmarkRecord> runBenchmark() {
             insertData.stats.record(time.count());
         }
 
-        BenchmarkRecord getData{typeName, "get", sizeRange, countRange};
+        BenchmarkData getData{typeName, "get", sizeRange, countRange};
         for (int rep = 0; rep < REPEATS; rep++) {
             string key = pickKey(store);
             string value;
@@ -145,7 +145,7 @@ vector<BenchmarkRecord> runBenchmark() {
             getData.stats.record(time.count());
         }
 
-        BenchmarkRecord updateData{typeName, "update", sizeRange, countRange};
+        BenchmarkData updateData{typeName, "update", sizeRange, countRange};
         for (int rep = 0; rep < REPEATS; rep++) {
             string key = pickKey(store);
             string value = randValue(sizeRange);
@@ -153,7 +153,7 @@ vector<BenchmarkRecord> runBenchmark() {
             updateData.stats.record(time.count());
         }
 
-        BenchmarkRecord removeData{typeName, "remove", sizeRange, countRange};
+        BenchmarkData removeData{typeName, "remove", sizeRange, countRange};
         for (int rep = 0; rep < REPEATS; rep++) {
             string key = pickKey(store);
             auto time = utils::timeIt([&]() { store->remove(key); });
@@ -178,7 +178,7 @@ int main(int argc, char** argv) {
     int res = context.run();
     if(context.shouldExit()) return res;
 
-    vector<BenchmarkRecord> records = runBenchmark();
+    vector<BenchmarkData> records = runBenchmark();
 
     const std::time_t now = chrono::system_clock::to_time_t(chrono::system_clock::now());
     std::stringstream nowStr;
