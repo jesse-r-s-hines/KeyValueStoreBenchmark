@@ -57,8 +57,8 @@ namespace utils {
 
         string outputStr;
         string line;
-        while (du.running() && std::getline(out, line) && !line.empty())
-            outputStr += line;
+        while (out && std::getline(out, line) && !line.empty())
+            outputStr += line + "\n";
         du.wait();
 
         return std::stol(outputStr);
