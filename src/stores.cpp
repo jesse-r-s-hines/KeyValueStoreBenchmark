@@ -3,6 +3,9 @@
 #include <filesystem>
 #include <fstream>
 #include <map>
+#include <tuple>
+#include <typeinfo>
+#include <typeindex>
 
 #include <SQLiteCpp/SQLiteCpp.h>
 #include <SQLiteCpp/VariadicBind.h>
@@ -13,14 +16,12 @@
 #include "stores.h"
 
 namespace stores {
+    using std::string, std::optional, std::tuple, std::unique_ptr, std::make_unique, std::to_string;
+    using std::size_t, std::filesystem::path, std::function, std::ofstream, std::ifstream;
+    using uint = unsigned int;
     namespace filesystem = std::filesystem;
     using namespace std::string_literals;
-    using std::string, std::optional, std::unique_ptr, std::make_unique, std::to_string, std::size_t, filesystem::path;
-    using std::ofstream, std::ifstream;
-    using uint = unsigned int;
 
-    Store::Store(const path& filepath) : filepath(filepath) {};
-    std::string Store::typeName() { return types.at(this->type()); };
 
     class SQLite3Store : public Store {
         SQLite::Database db;
@@ -50,8 +51,6 @@ namespace stores {
             getStmt.emplace(db, "SELECT value FROM data WHERE key = ?");
             removeStmt.emplace(db, "DELETE FROM data WHERE key = ?");
         }
-
-        Type type() { return Type::SQLite3; }
 
         void insert(const string& key, const string& value) override {
             SQLite::bind(insertStmt.value(), key, value);
@@ -183,8 +182,6 @@ namespace stores {
             delete db;
         }
 
-        Type type() { return Type::LevelDB; }
-
         void insert(const string& key, const string& value) override {
            leveldb::Status s = db->Put(leveldb::WriteOptions(), key, value);
            checkStatus(s);
@@ -229,8 +226,6 @@ namespace stores {
         ~RocksDBStore() {
             delete db;
         }
-
-        Type type() { return Type::RocksDB; }
 
         void insert(const string& key, const string& value) override {
            rocksdb::Status s = db->Put(rocksdb::WriteOptions(), key, value);
@@ -285,8 +280,6 @@ namespace stores {
             checkStatus(s);
         }
 
-        Type type() { return Type::BerkeleyDB; }
-
         void insert(const string& key, const string& value) override {
             Dbt keyDbt = makeDbt(key);
             Dbt valueDbt((void *) value.c_str(), value.size());
@@ -326,8 +319,6 @@ namespace stores {
             if (deleteIfExists) filesystem::remove_all(filepath);
             filesystem::create_directories(filepath);
         }
-
-        Type type() { return Type::FlatFolder; }
 
         void insert(const string& key, const string& value) override {
             ofstream file(getPath(key), ifstream::out|ofstream::binary);
@@ -409,8 +400,6 @@ namespace stores {
             filesystem::create_directories(filepath);
         }
 
-        Type type() { return Type::NestedFolder; }
-
         void insert(const string& key, const string& value) override {
             path path = getPath(key);
             filesystem::create_directories(path.parent_path());
@@ -443,6 +432,20 @@ namespace stores {
         }
     };
 
+    std::map<std::type_index, std::tuple<Type, string>> storeInfo {
+        {typeid(SQLite3Store), {Type::SQLite3, "SQLite3"}},
+        {typeid(LevelDBStore), {Type::LevelDB, "LevelDB"}},
+        {typeid(RocksDBStore), {Type::RocksDB, "RocksDB"}},
+        {typeid(BerkeleyDBStore), {Type::BerkeleyDB, "BerkeleyDB"}},
+        {typeid(FlatFolderStore), {Type::FlatFolder, "FlatFolder"}},
+        {typeid(NestedFolderStore), {Type::NestedFolder, "NestedFolder"}},
+    };
+    const std::map<Type, std::string> types = []() {
+        std::map<Type, std::string> result;
+        for (auto& [type, info] : storeInfo) result[std::get<0>(info)] = std::get<1>(info);
+        return result;
+    }();
+
     unique_ptr<Store> getStore(Type type, const path& filepath, bool deleteIfExists) {
         switch (type) {
             case Type::SQLite3:
@@ -463,4 +466,8 @@ namespace stores {
         }
         throw std::runtime_error("Unknown type"); // Shouldn't be possible
     };
+
+    Store::Store(const path& filepath) : filepath(filepath) {};
+    Type Store::type() { return std::get<0>(storeInfo.at(typeid(*this))); };
+    std::string Store::typeName() { return types.at(this->type()); };
 }

@@ -8,16 +8,8 @@ namespace stores {
     enum class Type {
         SQLite3, LevelDB, RocksDB, BerkeleyDB, FlatFolder, NestedFolder
     };
-    
     /** Maps all the store Types to a string name */
-    const std::map<Type, std::string> types __attribute__((unused)) {
-        {Type::SQLite3, "SQLite3"},
-        {Type::LevelDB, "LevelDB"},
-        {Type::RocksDB, "RocksDB"},
-        {Type::BerkeleyDB, "BerkeleyDB"},
-        {Type::FlatFolder, "FlatFolder"},
-        {Type::NestedFolder, "NestedFolder"},
-    };
+    extern const std::map<Type, std::string> types;
 
     /**
      * Abstract base class for a key-value store.
@@ -28,7 +20,7 @@ namespace stores {
         const std::filesystem::path filepath;
 
         /** Get the type of the underlying store */
-        virtual Type type() = 0;
+        Type type();
         /** Get the type of the underlying store */
         std::string typeName();
 
