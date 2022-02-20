@@ -5,7 +5,7 @@
 
 namespace stores {
     enum class Type {
-        SQLite3, LevelDB, RocksDB, BerkeleyDB, FlatFolder
+        SQLite3, LevelDB, RocksDB, BerkeleyDB, FlatFolder, NestedFolder
     };
     
     /** Maps all the store Types to a string name */
@@ -15,6 +15,7 @@ namespace stores {
         {Type::RocksDB, "RocksDB"},
         {Type::BerkeleyDB, "BerkeleyDB"},
         {Type::FlatFolder, "FlatFolder"},
+        {Type::NestedFolder, "NestedFolder"},
     };
 
     /**

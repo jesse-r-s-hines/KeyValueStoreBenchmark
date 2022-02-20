@@ -13,10 +13,11 @@
 #include "stores.h"
 
 namespace stores {
-    using std::string, std::optional, std::unique_ptr, std::make_unique;
+    using std::string, std::optional, std::unique_ptr, std::make_unique, std::to_string, std::size_t;
     using std::ofstream, std::ifstream;
     namespace filesystem = std::filesystem;
     using namespace std::string_literals;
+    using uint = unsigned int;
 
     Store::Store(const string& filepath) : filepath(filepath) {};
     std::string Store::typeName() { return types.at(this->type()); };
@@ -357,6 +358,90 @@ namespace stores {
         }
     };
 
+    /**
+     * Stores each record as a file with its key as the name. To avoid putting large numbers of files in a single
+     * directory, it will nest the files like so:
+     * - c4
+     *     - ca
+     *       - 4238a0b923820dcc509a6f75849b
+     *     - ae
+     *       - 728d9d4c2f636f067f89cc14862c
+     * - ec
+     *   - cb
+     *     - c87e4b5ce2fe28308fd9f2a7baf3
+     * 
+     * Note: This does not hash the keys for you, and keys should be fixed width.
+     * 
+     * @param charsPerLevel The number of chars in each level of the name
+     * @param depth The depth of the tree (0 will use all available chars)
+     * @param keyLen The size of each key
+     */
+    class NestedFolderStore : public Store {
+        uint charsPerLevel;
+        uint depth;
+        size_t keyLen;
+
+        filesystem::path getPath(const string& key) {
+            if (key.size() != keyLen)
+                throw std::runtime_error("Key \"" + key + "\" not of size " + to_string(keyLen));
+
+            filesystem::path path(filepath);
+            uint i = 0;
+            for (; i < (depth - 1) * charsPerLevel; i += charsPerLevel) {
+                path /= key.substr(i, charsPerLevel); // substr does bounds check
+            }
+            if (i < key.size()) {
+                path /= key.substr(i, string::npos);
+            }
+
+            return path;
+        }
+
+    public:
+        NestedFolderStore(const string& filepath,
+            uint charsPerLevel, uint depth, size_t keyLen,
+            bool deleteIfExists = false
+        ) : Store(filepath),
+            charsPerLevel(charsPerLevel),
+            depth(depth == 0 ? keyLen / charsPerLevel + (keyLen % charsPerLevel != 0) : depth),
+            keyLen(keyLen) {
+            if (deleteIfExists) filesystem::remove_all(filepath);
+            filesystem::create_directories(filepath);
+        }
+
+        Type type() { return Type::NestedFolder; }
+
+        void insert(const string& key, const string& value) override {
+            filesystem::path path = getPath(key);
+            filesystem::create_directories(path.parent_path());
+            ofstream file(path, ifstream::out|ofstream::binary);
+            file.write(value.c_str(), value.size());
+        }
+
+        void update(const string& key, const string& value) override {
+            insert(key, value);
+        }
+
+        string get(const string& key) override {
+            ifstream file(getPath(key), ifstream::in|ifstream::binary|ifstream::ate); // open at end of file
+            if (!file.is_open())
+                throw std::runtime_error("Key \""s + key + "\" doesn't exit");
+
+            // get pos (which is size of file since we're at the end)
+            // would building a buffer be better as it wouldn't have a second seek? (but we'd do more memory allocations)
+            auto size = file.tellg();
+            file.seekg(0, ifstream::beg);
+            string value;
+            value.resize(size);
+            file.read(&value[0], size);
+            return value;
+        }
+
+        void remove(const string& key) override {
+            // TODO potential improvement, delete empty directories left. Though that could slow it down as well
+            filesystem::remove(getPath(key));
+        }
+    };
 
     unique_ptr<Store> getStore(Type type, string filepath, bool deleteIfExists) {
         switch (type) {
@@ -370,6 +455,11 @@ namespace stores {
                 return make_unique<stores::BerkeleyDBStore>(filepath, deleteIfExists);
             case Type::FlatFolder:
                 return make_unique<stores::FlatFolderStore>(filepath, deleteIfExists);
+            case Type::NestedFolder:
+                // using 32 char hash (128) so we don't have to worry about collisions
+                // 3 levels of nesting with 2 chars and a max of 10,000,000 records should have 2 levels with 265
+                // folders and and about 142 files at the lowest level on average.
+                return make_unique<stores::NestedFolderStore>(filepath, 2, 3, 32, deleteIfExists);
         }
         throw std::runtime_error("Unknown type"); // Shouldn't be possible
     };
