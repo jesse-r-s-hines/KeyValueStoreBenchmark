@@ -31,11 +31,13 @@ namespace tests {
 
                 store->insert(key, "value");
                 REQUIRE(store->get(key) == "value");
+                REQUIRE(store->count() == 1);
 
                 store->update(key, "updated");
                 REQUIRE(store->get(key) == "updated");
 
                 store->remove(key);
+                REQUIRE(store->count() == 0); 
 
                 REQUIRE_THROWS(store->get(key));
             }

@@ -52,19 +52,19 @@ namespace stores {
             removeStmt.emplace(db, "DELETE FROM data WHERE key = ?");
         }
 
-        void insert(const string& key, const string& value) override {
+        void _insert(const string& key, const string& value) override {
             SQLite::bind(insertStmt.value(), key, value);
             insertStmt.value().exec();
             insertStmt.value().reset();
         }
 
-        void update(const string& key, const string& value) override {
+        void _update(const string& key, const string& value) override {
             SQLite::bind(updateStmt.value(), value, key);
             updateStmt.value().exec();
             updateStmt.value().reset();
         }
 
-        string get(const string& key) override {
+        string _get(const string& key) override {
             SQLite::bind(getStmt.value(), key);
             getStmt.value().executeStep(); // only one result
 
@@ -77,7 +77,7 @@ namespace stores {
             return value;
         }
 
-        void remove(const string& key) override {
+        void _remove(const string& key) override {
             SQLite::bind(removeStmt.value(), key);
             removeStmt.value().exec();
             removeStmt.value().reset();
@@ -125,7 +125,7 @@ namespace stores {
             sqlite3_finalize(this->removeStmt);
         }
 
-        void insert(string key, const string& value) override {
+        void _insert(string key, const string& value) override {
             // SQLITE_STATIC means that std::string is responsible for the memory of key and value
             sqlite3_bind_text(this->insertStmt, 1, key.c_str(), key.length(), SQLITE_STATIC);
             sqlite3_bind_blob(this->insertStmt, 2, value.c_str(), value.length(), SQLITE_STATIC);
@@ -134,7 +134,7 @@ namespace stores {
             sqlite3_reset(this->insertStmt);
         }
 
-        void update(string key, const string& value) override {
+        void _update(string key, const string& value) override {
             sqlite3_bind_text(this->updateStmt, 2, key.c_str(), key.length(), SQLITE_STATIC);
             sqlite3_bind_blob(this->updateStmt, 1, value.c_str(), value.length(), SQLITE_STATIC);
 
@@ -142,7 +142,7 @@ namespace stores {
             sqlite3_reset(this->updateStmt);
         }
 
-        string get(string key) override {
+        string _get(string key) override {
             sqlite3_bind_text(this->getStmt, 1, key.c_str(), key.length(), SQLITE_STATIC);
 
             sqlite3_step(this->getStmt);
@@ -150,7 +150,7 @@ namespace stores {
             sqlite3_reset(this->getStmt);
         }
 
-        void remove(string key) override {
+        void _remove(string key) override {
             sqlite3_bind_text(this->removeStmt, 1, key.c_str(), key.length(), SQLITE_STATIC);
 
             sqlite3_step(this->removeStmt);
@@ -182,23 +182,23 @@ namespace stores {
             delete db;
         }
 
-        void insert(const string& key, const string& value) override {
+        void _insert(const string& key, const string& value) override {
            leveldb::Status s = db->Put(leveldb::WriteOptions(), key, value);
            checkStatus(s);
         }
 
-        void update(const string& key, const string& value) override {
-            insert(key, value);
+        void _update(const string& key, const string& value) override {
+            _insert(key, value);
         }
 
-        string get(const string& key) override {
+        string _get(const string& key) override {
             std::string value;
             leveldb::Status s = db->Get(leveldb::ReadOptions(), key, &value);
             checkStatus(s);
             return value;
         }
 
-        void remove(const string& key) override {
+        void _remove(const string& key) override {
             leveldb::Status s = db->Delete(leveldb::WriteOptions(), key);
             checkStatus(s);
         }
@@ -227,23 +227,23 @@ namespace stores {
             delete db;
         }
 
-        void insert(const string& key, const string& value) override {
+        void _insert(const string& key, const string& value) override {
            rocksdb::Status s = db->Put(rocksdb::WriteOptions(), key, value);
            checkStatus(s);
         }
 
-        void update(const string& key, const string& value) override {
-            insert(key, value);
+        void _update(const string& key, const string& value) override {
+            _insert(key, value);
         }
 
-        string get(const string& key) override {
+        string _get(const string& key) override {
             std::string value;
             rocksdb::Status s = db->Get(rocksdb::ReadOptions(), key, &value);
             checkStatus(s);
             return value;
         }
 
-        void remove(const string& key) override {
+        void _remove(const string& key) override {
             rocksdb::Status s = db->Delete(rocksdb::WriteOptions(), key);
             checkStatus(s);
         }
@@ -280,18 +280,18 @@ namespace stores {
             checkStatus(s);
         }
 
-        void insert(const string& key, const string& value) override {
+        void _insert(const string& key, const string& value) override {
             Dbt keyDbt = makeDbt(key);
             Dbt valueDbt((void *) value.c_str(), value.size());
             int s = db.put(NULL, &keyDbt, &valueDbt, 0);
             checkStatus(s);
         }
 
-        void update(const string& key, const string& value) override {
-            insert(key, value);
+        void _update(const string& key, const string& value) override {
+            _insert(key, value);
         }
 
-        string get(const string& key) override {
+        string _get(const string& key) override {
             Dbt keyDbt = makeDbt(key);
             Dbt valueDbt;
             int s = db.get(NULL, &keyDbt, &valueDbt, 0);
@@ -300,7 +300,7 @@ namespace stores {
             return string((char*) valueDbt.get_data(), valueDbt.get_size());
         }
 
-        void remove(const string& key) override {
+        void _remove(const string& key) override {
             Dbt keyDbt = makeDbt(key);
             db.del(NULL, &keyDbt, 0);
         }
@@ -320,16 +320,16 @@ namespace stores {
             filesystem::create_directories(filepath);
         }
 
-        void insert(const string& key, const string& value) override {
+        void _insert(const string& key, const string& value) override {
             ofstream file(getPath(key), ifstream::out|ofstream::binary);
             file.write(value.c_str(), value.size());
         }
 
-        void update(const string& key, const string& value) override {
-            insert(key, value);
+        void _update(const string& key, const string& value) override {
+            _insert(key, value);
         }
 
-        string get(const string& key) override {
+        string _get(const string& key) override {
             ifstream file(getPath(key), ifstream::in|ifstream::binary|ifstream::ate); // open at end of file
             if (!file.is_open())
                 throw std::runtime_error("Key \""s + key + "\" doesn't exit");
@@ -344,7 +344,7 @@ namespace stores {
             return value;
         }
 
-        void remove(const string& key) override {
+        void _remove(const string& key) override {
             filesystem::remove(getPath(key));
         }
     };
@@ -398,18 +398,18 @@ namespace stores {
             filesystem::create_directories(filepath);
         }
 
-        void insert(const string& key, const string& value) override {
+        void _insert(const string& key, const string& value) override {
             path path = getPath(key);
             filesystem::create_directories(path.parent_path());
             ofstream file(path, ifstream::out|ofstream::binary);
             file.write(value.c_str(), value.size());
         }
 
-        void update(const string& key, const string& value) override {
-            insert(key, value);
+        void _update(const string& key, const string& value) override {
+            _insert(key, value);
         }
 
-        string get(const string& key) override {
+        string _get(const string& key) override {
             ifstream file(getPath(key), ifstream::in|ifstream::binary|ifstream::ate); // open at end of file
             if (!file.is_open())
                 throw std::runtime_error("Key \""s + key + "\" doesn't exit");
@@ -424,7 +424,7 @@ namespace stores {
             return value;
         }
 
-        void remove(const string& key) override {
+        void _remove(const string& key) override {
             // TODO potential improvement, delete empty directories left. Though that could slow it down as well
             filesystem::remove(getPath(key));
         }
@@ -466,6 +466,19 @@ namespace stores {
     };
 
     Store::Store(const path& filepath) : filepath(filepath) {};
+    
     Type Store::type() { return std::get<0>(storeInfo.at(typeid(*this))); };
     std::string Store::typeName() { return types.at(this->type()); };
+    size_t Store::count() { return _count; };
+
+    void Store::insert(const string& key, const string& value) {
+        this->_insert(key, value);
+        _count++;
+    };
+    void Store::update(const string& key, const string& value) { this->_update(key, value); };
+    string Store::get(const string& key) { return this->_get(key); };
+    void Store::remove(const string& key) {
+        this->_remove(key);
+        _count--;
+    };
 }
