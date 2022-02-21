@@ -11,6 +11,7 @@
 #include <sstream>
 #include <algorithm>
 #include <cmath>
+#include <functional>
 
 #include <boost/json/src.hpp>
 #include <boost/uuid/detail/sha1.hpp>
@@ -44,8 +45,8 @@ void tag_invoke(const json::value_from_tag&, json::value& jv, BenchmarkData cons
     jv = {
         {"store", r.store},
         {"op", r.op},
-        {"size", utils::prettySize(r.size.min) + " - " + utils::prettySize(r.size.max + 1)},
-        {"records", std::to_string(r.records.min) + " - " + std::to_string(r.records.max)},
+        {"size", utils::prettySize(r.size.min) + "-" + utils::prettySize(r.size.max + 1)},
+        {"records", std::to_string(r.records.min) + "-" + std::to_string(r.records.max)},
         {"measurements", r.stats.count()},
         {"sum", r.stats.sum()},
         {"min", r.stats.min()},
@@ -53,6 +54,37 @@ void tag_invoke(const json::value_from_tag&, json::value& jv, BenchmarkData cons
         {"avg", r.stats.avg()},
     };
 }
+
+string benchmarkDataToJSON(vector<BenchmarkData> data) {
+    std::stringstream ss;
+    ss << "[\n";
+    for (size_t i = 0; i < data.size() - 1; i++)
+        ss << "    " << json::value_from(data[i]) << ",\n";
+    if (data.size() > 0)
+        ss << "    " << json::value_from(data.back()) << "\n";
+    ss << "]\n";
+    return ss.str();
+}
+
+string benchmarkDataToCSV(vector<BenchmarkData> data) {
+    std::stringstream ss;
+    ss << "store,op,size,records,measurements,sum,min,max,avg";
+
+    for (auto& r : data) {
+        ss << r.store << ","
+           << r.op << ","
+           << utils::prettySize(r.size.min) + "-" + utils::prettySize(r.size.max + 1) << ","
+           << std::to_string(r.records.min) + "-" + std::to_string(r.records.max) << ","
+           << r.stats.count() << ","
+           << r.stats.sum() << ","
+           << r.stats.min() << ","
+           << r.stats.max() << ","
+           << r.stats.avg() << "\n";
+    }
+
+    return ss.str();
+}
+
 
 /** How many iterations of each measurement to do */
 const int REPEATS = 100;
@@ -170,13 +202,8 @@ vector<BenchmarkData> runBenchmark() {
         size_t dataSize = store->count() * ((sizeRange.min + sizeRange.max) / 2.0);
         store.reset(); // close the store
 
-        std::cout << typeName << "\n";
         size_t diskSize = utils::diskUsage(filepath);
         int spaceEfficiencyPercent = std::round(((double) dataSize / diskSize) * 100);
-
-        std::cout << "diskSize: " << diskSize << "\n";
-        std::cout << "dataSize: " << dataSize << "\n";
-        std::cout << "efficiency: " << spaceEfficiencyPercent << "%\n";
 
         BenchmarkData spaceData{typeName, "space", sizeRange, countRange};
         spaceData.stats.record(spaceEfficiencyPercent); // store as percent
@@ -195,23 +222,25 @@ int main(int argc, char** argv) {
     int res = context.run();
     if(context.shouldExit()) return res;
 
-    vector<BenchmarkData> records = runBenchmark();
+    vector<BenchmarkData> data = runBenchmark();
 
     const std::time_t now = chrono::system_clock::to_time_t(chrono::system_clock::now());
     std::stringstream nowStr;
     nowStr << std::put_time(std::localtime(&now), "%Y%m%d%H%M%S");
 
-    path outFileName = path("out") / ("benchmark-"s + nowStr.str() + ".json");
+    string format = "csv"; // or json
+    path outFileName;
+    string strRepr;
+    if (format == "csv") {
+        outFileName = path("out") / ("benchmark-"s + nowStr.str() + ".csv");
+        strRepr = benchmarkDataToCSV(data);
+    } else {
+        outFileName = path("out") / ("benchmark-"s + nowStr.str() + ".json");
+        strRepr = benchmarkDataToJSON(data);
+    }
+
     std::ofstream output;
     output.open(outFileName);
-
-    output << "[\n";
-    for (size_t i = 0; i < records.size(); i++) {
-        output << "    " << json::value_from(records[i]) << (i < records.size() - 1 ? "," : "") << "\n";
-    }
-    output << "]\n";
-
-    output.close();
-
+    output << strRepr;
     std::cout << "Benchmark written to " << std::quoted(outFileName.native()) << "\n";
 }
