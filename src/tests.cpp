@@ -20,12 +20,9 @@ namespace tests {
         filesystem::remove_all("out/tests");
         filesystem::create_directories("out/tests/");
 
-        vector<unique_ptr<stores::Store>> stores{};
-        for (auto [type, typeName] : stores::types)
-            stores.push_back(stores::getStore(type, path("out") / "tests" / typeName));
-
         SUBCASE("Basic") {
-            for (auto& store : stores) {
+            for (auto& [type, typeName] : stores::types) {
+                auto store = stores::getStore(type, path("out") / "tests" / typeName);
                 INFO(store->typeName());
                 string key = utils::randHash(32); 
 
@@ -44,7 +41,9 @@ namespace tests {
         }
 
         SUBCASE("Nulls") {
-            for (auto& store : stores) {
+            for (auto& [type, typeName] : stores::types) {
+                auto store = stores::getStore(type, path("out") / "tests" / typeName);
+
                 INFO(store->typeName());
                 string key = utils::randHash(32); 
 
