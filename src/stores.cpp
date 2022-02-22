@@ -7,8 +7,7 @@
 #include <typeinfo>
 #include <typeindex>
 
-#include <SQLiteCpp/SQLiteCpp.h>
-#include <SQLiteCpp/VariadicBind.h>
+#include <sqlite3.h>
 #include "rocksdb/db.h"
 #include "leveldb/db.h"
 #include <berkeleydb/include/db_cxx.h>
@@ -24,77 +23,23 @@ namespace stores {
 
 
     class SQLite3Store : public Store {
-        SQLite::Database db;
-        // because of https://github.com/SRombauts/SQLiteCpp/issues/347 we need to use optional
-        optional<SQLite::Statement> insertStmt;
-        optional<SQLite::Statement> updateStmt;
-        optional<SQLite::Statement> getStmt;
-        optional<SQLite::Statement> removeStmt;
-
-    public:
-        SQLite3Store(const path& filepath) :
-            Store(( // comma operator hack to delete before construction
-                filesystem::remove_all(filepath),
-                filepath
-            )),
-            db(filepath, SQLite::OPEN_READWRITE|SQLite::OPEN_CREATE) {
-
-            string sql = 
-                "CREATE TABLE IF NOT EXISTS data("
-                "    key TEXT PRIMARY KEY NOT NULL,"
-                "    value BLOB NOT NULL"
-                ");";
-            db.exec(sql);
-
-            insertStmt.emplace(db, "INSERT INTO data VALUES (?, ?)");
-            updateStmt.emplace(db, "UPDATE data SET value = ? WHERE key = ?");
-            getStmt.emplace(db, "SELECT value FROM data WHERE key = ?");
-            removeStmt.emplace(db, "DELETE FROM data WHERE key = ?");
-        }
-
-        void _insert(const string& key, const string& value) override {
-            SQLite::bind(insertStmt.value(), key, value);
-            insertStmt.value().exec();
-            insertStmt.value().reset();
-        }
-
-        void _update(const string& key, const string& value) override {
-            SQLite::bind(updateStmt.value(), value, key);
-            updateStmt.value().exec();
-            updateStmt.value().reset();
-        }
-
-        string _get(const string& key) override {
-            SQLite::bind(getStmt.value(), key);
-            getStmt.value().executeStep(); // only one result
-
-            // Note: This is doing a copy of the blob. the returned char* becomes invalid after calling `reset` so
-            // we can't really avoid the copy? For benchmarking purposes we could potentially return a string_view or 
-            // or char* and just note the pointer becomes invalid after next call to get. Should probably use string_view
-            // everywhere to avoid copies? Though reference already should avoid copy unless I'm passing char*
-            string value = getStmt.value().getColumn(0).getString();
-            getStmt.value().reset();
-            return value;
-        }
-
-        void _remove(const string& key) override {
-            SQLite::bind(removeStmt.value(), key);
-            removeStmt.value().exec();
-            removeStmt.value().reset();
-        }
-    };
-
-    /*
-    class SQLite3Store : public DB {
         sqlite3* db = nullptr;
         sqlite3_stmt* insertStmt = nullptr;
         sqlite3_stmt* updateStmt = nullptr;
         sqlite3_stmt* getStmt = nullptr;
         sqlite3_stmt* removeStmt = nullptr;
 
+        void checkStatus(int status) {
+            if (status != SQLITE_OK && status != SQLITE_ROW && status != SQLITE_DONE) {
+                throw std::runtime_error("SQLite error: " + std::to_string(status));
+            }
+        }
+
     public:
-        SQLite3Store(string filename) {
-            sqlite3_open(filename.c_str(), &db);
+        SQLite3Store(const path& filepath) : Store(filepath) {
+            filesystem::remove_all(filepath);
+            int s = sqlite3_open(filepath.c_str(), &db);
+            checkStatus(s);
             char* errMmsg = nullptr;
 
             string sql = 
@@ -102,62 +47,90 @@ namespace stores {
                 "    key TEXT PRIMARY KEY NOT NULL,"
                 "    value BLOB NOT NULL"
                 ");";
-            sqlite3_exec(this->db, sql.c_str(), nullptr, 0, &errMmsg);
+            s = sqlite3_exec(this->db, sql.c_str(), nullptr, 0, &errMmsg);
+            checkStatus(s);
 
             sql = "INSERT INTO data VALUES (?, ?)";
-            sqlite3_prepare_v2(this->db, sql.c_str(), sql.length(), &(this->insertStmt), nullptr);
+            s = sqlite3_prepare_v2(this->db, sql.c_str(), sql.length(), &(this->insertStmt), nullptr);
+            checkStatus(s);
 
-            sql = "UPDATE data SET value = ?, WHERE key = ?";
-            sqlite3_prepare_v2(this->db, sql.c_str(), sql.length(), &(this->updateStmt), nullptr);
+            sql = "UPDATE data SET value = ? WHERE key = ?";
+            s = sqlite3_prepare_v2(this->db, sql.c_str(), sql.length(), &(this->updateStmt), nullptr);
+            checkStatus(s);
 
             sql = "SELECT value FROM data WHERE key = ?";
-            sqlite3_prepare_v2(this->db, sql.c_str(), sql.length(), &(this->getStmt), nullptr);
+            s = sqlite3_prepare_v2(this->db, sql.c_str(), sql.length(), &(this->getStmt), nullptr);
+            checkStatus(s);
 
             sql = "DELETE FROM data WHERE key = ?";
-            sqlite3_prepare_v2(this->db, sql.c_str(), sql.length(), &(this->removeStmt), nullptr);
+            s = sqlite3_prepare_v2(this->db, sql.c_str(), sql.length(), &(this->removeStmt), nullptr);
+            checkStatus(s);
         }
 
         ~SQLite3Store() {
-            sqlite3_close(this->db);
             sqlite3_finalize(this->insertStmt);
             sqlite3_finalize(this->updateStmt);
             sqlite3_finalize(this->getStmt);
             sqlite3_finalize(this->removeStmt);
+            sqlite3_close(this->db);
         }
 
-        void _insert(string key, const string& value) override {
+        void _insert(const string& key, const string& value) override {
             // SQLITE_STATIC means that std::string is responsible for the memory of key and value
-            sqlite3_bind_text(this->insertStmt, 1, key.c_str(), key.length(), SQLITE_STATIC);
-            sqlite3_bind_blob(this->insertStmt, 2, value.c_str(), value.length(), SQLITE_STATIC);
+            int s = sqlite3_bind_text(this->insertStmt, 1, key.c_str(), key.length(), SQLITE_STATIC);
+            checkStatus(s);
+            s = sqlite3_bind_blob(this->insertStmt, 2, value.c_str(), value.length(), SQLITE_STATIC);
+            checkStatus(s);
 
-            sqlite3_step(this->insertStmt);
-            sqlite3_reset(this->insertStmt);
+            s = sqlite3_step(this->insertStmt);
+            checkStatus(s);
+            s = sqlite3_reset(this->insertStmt);
+            checkStatus(s);
         }
 
-        void _update(string key, const string& value) override {
-            sqlite3_bind_text(this->updateStmt, 2, key.c_str(), key.length(), SQLITE_STATIC);
-            sqlite3_bind_blob(this->updateStmt, 1, value.c_str(), value.length(), SQLITE_STATIC);
+        void _update(const string& key, const string& value) override {
+            int s = sqlite3_bind_text(this->updateStmt, 2, key.c_str(), key.length(), SQLITE_STATIC);
+            checkStatus(s);
+            s = sqlite3_bind_blob(this->updateStmt, 1, value.c_str(), value.length(), SQLITE_STATIC);
+            checkStatus(s);
 
-            sqlite3_step(this->updateStmt);
-            sqlite3_reset(this->updateStmt);
+            s = sqlite3_step(this->updateStmt);
+            checkStatus(s);
+            s = sqlite3_reset(this->updateStmt);
+            checkStatus(s);
         }
 
-        string _get(string key) override {
-            sqlite3_bind_text(this->getStmt, 1, key.c_str(), key.length(), SQLITE_STATIC);
+        string _get(const string& key) override {
+            int s = sqlite3_bind_text(this->getStmt, 1, key.c_str(), key.length(), SQLITE_STATIC);
+            checkStatus(s);
+            s = sqlite3_step(this->getStmt);
+            if (s == SQLITE_DONE)
+                throw std::runtime_error("Key not found");
+            checkStatus(s);
 
-            sqlite3_step(this->getStmt);
-            const void* temp = sqlite3_column_blob(this->getStmt, 1);
-            sqlite3_reset(this->getStmt);
+            const void* valueVoid = sqlite3_column_blob(this->getStmt, 0);
+            int size = sqlite3_column_bytes(this->getStmt, 0);
+
+            // Note: This is doing a copy of the blob. the returned char* becomes invalid after calling `reset` so
+            // we can't really avoid the copy? For benchmarking purposes we could potentially return a string_view or 
+            // or char* and just note the pointer becomes invalid after the next call to get.
+            string value(static_cast<const char*>(valueVoid), size);
+
+            s = sqlite3_reset(this->getStmt);
+            checkStatus(s);
+            return value;
         }
 
-        void _remove(string key) override {
-            sqlite3_bind_text(this->removeStmt, 1, key.c_str(), key.length(), SQLITE_STATIC);
+        void _remove(const string& key) override {
+            int s = sqlite3_bind_text(this->removeStmt, 1, key.c_str(), key.length(), SQLITE_STATIC);
+            checkStatus(s);
 
-            sqlite3_step(this->removeStmt);
-            sqlite3_reset(this->removeStmt);
+            s = sqlite3_step(this->removeStmt);
+            checkStatus(s);
+            s = sqlite3_reset(this->removeStmt);
+            checkStatus(s);
         }
     };
-    */
 
     class LevelDBStore : public Store {
         leveldb::DB* db;

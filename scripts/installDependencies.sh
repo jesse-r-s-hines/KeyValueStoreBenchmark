@@ -14,7 +14,7 @@ fi
 
 # --overlay-ports="./vcpkg_overlay_ports" \
 ./vcpkg/vcpkg install \
-    sqlitecpp \
+    sqlite3 \
     rocksdb[lz4] \
     leveldb \
     boost-json \

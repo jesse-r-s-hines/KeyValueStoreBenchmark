@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.18)
 project(benchmark)
 
-find_package(SQLiteCpp REQUIRED)
+find_package(unofficial-sqlite3 CONFIG REQUIRED)
 find_package(RocksDB REQUIRED)
 find_package(leveldb REQUIRED)
 find_package(doctest REQUIRED)
@@ -15,7 +15,7 @@ target_compile_options(benchmark PRIVATE -Wall -Wextra -pedantic -O2)
 
 target_link_libraries(benchmark
     PRIVATE
-        SQLiteCpp
+        unofficial::sqlite3::sqlite3
         RocksDB::rocksdb
         leveldb::leveldb
         ${CMAKE_BINARY_DIR}/berkeleydb/lib/libdb_cxx.a
