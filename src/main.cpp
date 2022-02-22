@@ -229,18 +229,20 @@ int main(int argc, char** argv) {
     nowStr << std::put_time(std::localtime(&now), "%Y%m%d%H%M%S");
 
     string format = "csv"; // or json
-    path outFileName;
+    string outFileName;
     string strRepr;
     if (format == "csv") {
-        outFileName = path("out") / ("benchmark-"s + nowStr.str() + ".csv");
+        outFileName = "benchmark-"s + nowStr.str() + ".csv";
         strRepr = benchmarkDataToCSV(data);
     } else {
-        outFileName = path("out") / ("benchmark-"s + nowStr.str() + ".json");
+        outFileName = "benchmark-"s + nowStr.str() + ".json";
         strRepr = benchmarkDataToJSON(data);
     }
 
     std::ofstream output;
-    output.open(outFileName);
+    path outFilePath = path("out") / "benchmarks" / outFileName;
+    filesystem::create_directories(outFilePath.parent_path());
+    output.open(outFilePath);
     output << strRepr;
-    std::cout << "Benchmark written to " << std::quoted(outFileName.native()) << "\n";
+    std::cout << "Benchmark written to " << std::quoted(outFilePath.native()) << "\n";
 }
