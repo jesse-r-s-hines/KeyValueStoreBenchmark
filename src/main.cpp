@@ -73,8 +73,8 @@ string benchmarkDataToCSV(vector<BenchmarkData> data) {
     for (auto& r : data) {
         ss << r.store << ","
            << r.op << ","
-           << utils::prettySize(r.size.min) + "-" + utils::prettySize(r.size.max + 1) << ","
-           << std::to_string(r.records.min) + "-" + std::to_string(r.records.max) << ","
+           << utils::prettySize(r.size.min) + " to " + utils::prettySize(r.size.max + 1) << ","
+           << std::to_string(r.records.min) + " to " + std::to_string(r.records.max) << ","
            << r.stats.count() << ","
            << r.stats.sum() << ","
            << r.stats.min() << ","
