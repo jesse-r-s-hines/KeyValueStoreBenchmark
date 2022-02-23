@@ -68,7 +68,7 @@ string benchmarkDataToJSON(vector<BenchmarkData> data) {
 
 string benchmarkDataToCSV(vector<BenchmarkData> data) {
     std::stringstream ss;
-    ss << "store,op,size,records,measurements,sum,min,max,avg";
+    ss << "store,op,size,records,measurements,sum,min,max,avg\n";
 
     for (auto& r : data) {
         ss << r.store << ","
