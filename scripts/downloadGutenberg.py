@@ -2,7 +2,7 @@
 # Install dependencies:
 #   python3 -m pip gutenbergpy
 
-import random, os, re
+import random, os, re, shutil
 from pathlib import Path
 from gutenbergpy.gutenbergcache import GutenbergCache
 from gutenbergpy import textget
@@ -16,9 +16,9 @@ def retry(func, times):
     return func() # let error fall through
 
 def fetch_random_books(dest, count):
-    dest = Path(dest)
-    dest.mkdir(exist_ok=True, parents=True)
-    os.chdir(dest)
+    dest = Path(dest).resolve()
+    (dest / "cache").mkdir(exist_ok=True, parents=True)
+    os.chdir(dest / "cache")
 
     if not GutenbergCache.exists():
         # This is a one-time thing per machine
