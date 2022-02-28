@@ -64,3 +64,5 @@ fi
 #         message(FATAL_ERROR "Bad exit status")
 #     endif()
 # endif()
+
+./scripts/downloadGutenberg.py
