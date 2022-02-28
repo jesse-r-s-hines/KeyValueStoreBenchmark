@@ -199,6 +199,8 @@ int main(int argc, char** argv) {
     int res = context.run();
     if(context.shouldExit()) return res;
 
+    std::cout << "Starting benchmark...\n";
+
     vector<BenchmarkData> data = runBenchmark();
 
     const std::time_t now = chrono::system_clock::to_time_t(chrono::system_clock::now());
@@ -221,5 +223,6 @@ int main(int argc, char** argv) {
     filesystem::create_directories(outFilePath.parent_path());
     output.open(outFilePath);
     output << strRepr;
+    
     std::cout << "Benchmark written to " << std::quoted(outFilePath.native()) << "\n";
 }
