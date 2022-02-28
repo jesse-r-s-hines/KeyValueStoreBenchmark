@@ -2,18 +2,10 @@
 # Install dependencies:
 #   python3 -m pip gutenbergpy
 
-import random, os, re, shutil
+import random, os, re, shutil, sys
 from pathlib import Path
 from gutenbergpy.gutenbergcache import GutenbergCache
 from gutenbergpy import textget
-
-def retry(func, times):
-    for attempt in range(times - 1):
-        try:
-            return func()
-        except:
-            pass
-    return func() # let error fall through
 
 def fetch_random_books(dest, count):
     dest = Path(dest).resolve()
@@ -23,36 +15,33 @@ def fetch_random_books(dest, count):
     if not GutenbergCache.exists():
         # This is a one-time thing per machine
         GutenbergCache.create()
-
     cache = GutenbergCache.get_cache()
 
-    books = cache.query(downloadtype=['text/plain'])
-    downloaded = []
-    
-    while len(downloaded) < count:
-        book_id = random.choice(books)
-        books.remove(book_id)
-        try:
-            text = textget.get_text_by_id(book_id)
-        except:
-            continue # Some of them seem to just fail?
-        downloaded.append(book_id)
+    downloaded_books = [int(p.stem) for p in dest.glob("*.txt")] # Get already downloaded books
+    all_books = cache.query(downloadtype = ['text/plain'])
+    all_books = list(set(all_books) - set(downloaded_books))
 
-        name = cache.native_query(f"""
-            SELECT name
-            FROM titles t
-                JOIN books b on t.bookid = b.id
-            WHERE b.id = {int(book_id)}
-        """).fetchone()[0]
+    if len(downloaded_books) > count:  # Delete books if more than count
+        while len(downloaded_books) > count:
+            book_id = random.choice(downloaded_books)
+            downloaded_books.remove(book_id)
+            (dest / f"{book_id}.txt").unlink()
+    else:
+        while len(downloaded_books) < count:
+            book_id = random.choice(all_books)
+            all_books.remove(book_id)
 
-        file_name = re.sub(r"'", "", name)
-        file_name = file_name.splitlines()[0]
-        file_name = re.sub(r"\W", " ", file_name).title().replace(" ", "")
-        file_name = file_name[0:64]
-        file_name = file_name + ".txt"
+            try:
+                text = textget.get_text_by_id(book_id)
+            except:
+                continue # Some of them seem to just fail, so download another.
+            text = textget.strip_headers(text).decode().strip() + "\n"
 
-        (dest / file_name).write_text(text.decode())
+            downloaded_books.append(book_id)
+            (dest / f"{book_id}.txt").write_text(text)
 
 if __name__ == "__main__":
-    dest = Path(__file__).parent.parent.resolve() / "out/datasets/compressible"
-    fetch_random_books(dest, 100)
+    count = int(sys.argv[1] if len(sys.argv) >= 2 else 250)
+
+    dest = Path(__file__).parents[1].resolve() / "out/compressibleText"
+    fetch_random_books(dest, count)
