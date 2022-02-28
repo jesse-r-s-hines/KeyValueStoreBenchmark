@@ -14,7 +14,6 @@
 #include <functional>
 
 #include <boost/json/src.hpp>
-#include <boost/uuid/detail/sha1.hpp>
 
 #include "stores.h"
 #include "utils.h"
@@ -27,7 +26,6 @@ namespace json = boost::json;
 namespace chrono = std::chrono;
 namespace filesystem = std::filesystem;
 using namespace std::string_literals;
-using boost::uuids::detail::sha1;
 using std::vector, std::map, std::tuple, std::pair, std::string, filesystem::path, std::size_t;
 using utils::Range, utils::Stats, stores::Store, utils::KiB, utils::MiB, utils::GiB;
 using StorePtr = std::unique_ptr<stores::Store>;
@@ -109,30 +107,9 @@ const vector<Range<size_t>> countRanges{
     // {1'000'000, 10'000'000 - 1},
 };
 
-/**
- * Generate a random key by hashing a number. This allows us to easily get a random key from the store without having
- * to save all the keys we've added.
- */
-std::string genKey(size_t i) {
-    sha1 hash;
-    hash.process_bytes(reinterpret_cast<void*>(&i), sizeof(i));
-    hash.process_byte(136); // A salt
-    sha1::digest_type digest;
-    hash.get_digest(digest);
-
-    std::stringstream ss;
-    for (auto part : digest)
-        ss << std::setfill('0') << std::setw(sizeof(part) * 2) << std::hex << part;
-    return ss.str().substr(0, 32);
-}
-
 /** Picks a random key from the store */
 std::string pickKey(StorePtr& store) {
-   return genKey(utils::randInt<size_t>(0, store->count() - 1));
-}
-
-std::string randValue(Range<size_t> size) {
-    return utils::randBlob(utils::randInt(size.min, size.max));
+   return utils::genKey(utils::randInt<size_t>(0, store->count() - 1));
 }
 
 path getStorePath(stores::Type type) {
@@ -142,7 +119,7 @@ path getStorePath(stores::Type type) {
 StorePtr initStore(stores::Type type, size_t recordCount, Range<size_t> sizeRange) {
     StorePtr store = getStore(type, getStorePath(type));
     for (size_t i = 0; i < recordCount; i++) {
-        store->insert(genKey(store->count()), randValue(sizeRange));
+        store->insert(utils::genKey(store->count()), utils::randBlob(sizeRange));
     }
     return store;
 }
@@ -164,8 +141,8 @@ vector<BenchmarkData> runBenchmark() {
                 store.reset(); // close the store first (LevelDB has a lock)
                 store = initStore(type, countRange.min, sizeRange);
             }
-            string key = genKey(store->count());
-            string value = randValue(sizeRange);
+            string key = utils::genKey(store->count());
+            string value = utils::randBlob(sizeRange);
             auto time = utils::timeIt([&]() { store->insert(key, value); });
             insertData.stats.record(time.count());
         }
@@ -181,7 +158,7 @@ vector<BenchmarkData> runBenchmark() {
         BenchmarkData updateData{typeName, "update", sizeRange, countRange};
         for (int rep = 0; rep < REPEATS; rep++) {
             string key = pickKey(store);
-            string value = randValue(sizeRange);
+            string value = utils::randBlob(sizeRange);
             auto time = utils::timeIt([&]() { store->update(key, value); });
             updateData.stats.record(time.count());
         }
@@ -193,7 +170,7 @@ vector<BenchmarkData> runBenchmark() {
             removeData.stats.record(time.count());
 
             // Put the key back so we don't have to worry about if a key from genKey is still in the Store
-            string value = randValue(sizeRange);
+            string value = utils::randBlob(sizeRange);
             store->insert(key, value);
         }
 

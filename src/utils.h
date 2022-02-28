@@ -9,8 +9,6 @@
 #include <random>
 
 namespace utils {
-    std::string intToHex(long long i, int width);
-
     template<typename T>
     struct Range { T min; T max; };
 
@@ -24,10 +22,19 @@ namespace utils {
         return randRange(randGen);
     }
 
-    std::string randHash(int size);
-
     std::string randBlob(size_t size);
 
+    std::string randBlob(Range<size_t> size);
+
+    std::string intToHex(long long i, int width);
+
+    std::string randHash(int size);
+
+    /**
+     * Generate a random key by hashing a number. This allows us to easily get a random key from the store without
+     * having to save all the keys we've added.
+     */
+    std::string genKey(size_t i);
 
     std::chrono::nanoseconds timeIt(std::function<void()> func);
 
@@ -38,7 +45,7 @@ namespace utils {
 
     long long diskUsage(const std::filesystem::path& filepath);
 
-    /** Convert is in bytes to human readable string */
+    /** Convert size in bytes to a human readable string */
     std::string prettySize(std::size_t size);
 
     /**

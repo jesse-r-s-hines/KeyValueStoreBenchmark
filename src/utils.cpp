@@ -9,6 +9,7 @@
 #include <algorithm>
 
 #include <boost/process.hpp>
+#include <boost/uuid/detail/sha1.hpp>
 
 #include "utils.h"
 
@@ -16,9 +17,22 @@ namespace utils {
     using std::string, std::filesystem::path, std::vector;
     namespace process = boost::process;
     namespace chrono = std::chrono;
+    using boost::uuids::detail::sha1;
 
     std::random_device randomDevice;
     std::mt19937 randGen(randomDevice());
+
+    string randBlob(size_t size) {
+        std::uniform_int_distribution<unsigned char> randChar(0, 0xFF);
+        string blob;
+        blob.resize(size);
+        std::generate(blob.begin(), blob.end(), [&]() { return randChar(randGen); });
+        return blob;
+    }
+
+    std::string randBlob(Range<size_t> size) {
+        return randBlob(randInt(size.min, size.max));
+    }
 
     string intToHex(long long i, int width) {
         std::stringstream stream;
@@ -35,12 +49,17 @@ namespace utils {
         return hash;
     }
 
-    string randBlob(size_t size) {
-        std::uniform_int_distribution<unsigned char> randChar(0, 0xFF);
-        string blob;
-        blob.resize(size);
-        std::generate(blob.begin(), blob.end(), [&]() { return randChar(randGen); });
-        return blob;
+    std::string genKey(size_t i) {
+        sha1 hash;
+        hash.process_bytes(reinterpret_cast<void*>(&i), sizeof(i));
+        hash.process_byte(136); // An arbitrary salt
+        sha1::digest_type digest;
+        hash.get_digest(digest);
+
+        std::stringstream ss;
+        for (auto part : digest)
+            ss << std::setfill('0') << std::setw(sizeof(part) * 2) << std::hex << part;
+        return ss.str().substr(0, 32);
     }
 
     chrono::nanoseconds timeIt(std::function<void()> func) {
