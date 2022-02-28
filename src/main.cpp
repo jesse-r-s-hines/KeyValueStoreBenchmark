@@ -232,10 +232,10 @@ int main(int argc, char** argv) {
     string outFileName;
     string strRepr;
     if (format == "csv") {
-        outFileName = "benchmark-"s + nowStr.str() + ".csv";
+        outFileName = "benchmark"s + nowStr.str() + ".csv";
         strRepr = benchmarkDataToCSV(data);
     } else {
-        outFileName = "benchmark-"s + nowStr.str() + ".json";
+        outFileName = "benchmark"s + nowStr.str() + ".json";
         strRepr = benchmarkDataToJSON(data);
     }
 
