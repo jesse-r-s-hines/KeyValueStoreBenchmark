@@ -41,7 +41,7 @@ def fetch_random_books(dest, count):
             (dest / f"{book_id}.txt").write_text(text)
 
 if __name__ == "__main__":
-    count = int(sys.argv[1] if len(sys.argv) >= 2 else 100)
+    count = int(sys.argv[1] if len(sys.argv) >= 2 else 250)
 
     dest = Path(__file__).parents[1].resolve() / "build/compressibleText"
     fetch_random_books(dest, count)
