@@ -34,6 +34,8 @@ if [ ! -d "build/berkeleydb" ]; then
     # workaround https://stackoverflow.com/questions/64707079/berkeley-db-make-install-fails-on-linux
     mkdir -p "$BERKELEYDB_SRC/docs/bdb-sql" "$BERKELEYDB_SRC/docs/gsg_db_server"
     make install
+
+    cd "$PROJ_ROOT"
 fi
 
 # How to install BerkeleyDB in CMake
