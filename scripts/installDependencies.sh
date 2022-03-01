@@ -19,6 +19,7 @@ fi
     leveldb \
     boost-json \
     boost-process \
+    boost-uuid \
     doctest \
 
 if [ ! -d "build/berkeleydb" ]; then
