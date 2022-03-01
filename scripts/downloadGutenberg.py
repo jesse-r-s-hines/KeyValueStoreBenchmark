@@ -18,7 +18,7 @@ def fetch_random_books(dest, count):
     cache = GutenbergCache.get_cache()
 
     downloaded_books = [int(p.stem) for p in dest.glob("*.txt")] # Get already downloaded books
-    all_books = cache.query(downloadtype = ['text/plain'])
+    all_books = cache.query(downloadtype = ['text/plain'], languages = ['en'])
     all_books = list(set(all_books) - set(downloaded_books))
 
     if len(downloaded_books) > count:  # Delete books if more than count
@@ -41,7 +41,7 @@ def fetch_random_books(dest, count):
             (dest / f"{book_id}.txt").write_text(text)
 
 if __name__ == "__main__":
-    count = int(sys.argv[1] if len(sys.argv) >= 2 else 250)
+    count = int(sys.argv[1] if len(sys.argv) >= 2 else 100)
 
     dest = Path(__file__).parents[1].resolve() / "build/compressibleText"
     fetch_random_books(dest, count)
