@@ -35,6 +35,7 @@ struct BenchmarkData {
     string op;
     Range<size_t> size;
     Range<size_t> records;
+    string dataType;
     Stats<long long> stats{};
 };
 
@@ -45,6 +46,7 @@ void tag_invoke(const json::value_from_tag&, json::value& jv, BenchmarkData cons
         {"op", r.op},
         {"size", utils::prettySize(r.size.min) + "-" + utils::prettySize(r.size.max + 1)},
         {"records", std::to_string(r.records.min) + "-" + std::to_string(r.records.max)},
+        {"dataType", r.dataType},
         {"measurements", r.stats.count()},
         {"sum", r.stats.sum()},
         {"min", r.stats.min()},
@@ -66,13 +68,14 @@ string benchmarkDataToJSON(vector<BenchmarkData> data) {
 
 string benchmarkDataToCSV(vector<BenchmarkData> data) {
     std::stringstream ss;
-    ss << "store,op,size,records,measurements,sum,min,max,avg\n";
+    ss << "store,op,size,records,data type,measurements,sum,min,max,avg\n";
 
     for (auto& r : data) {
         ss << r.store << ","
            << r.op << ","
            << utils::prettySize(r.size.min) + " to " + utils::prettySize(r.size.max + 1) << ","
            << std::to_string(r.records.min) + " to " + std::to_string(r.records.max) << ","
+           << r.dataType << ","
            << r.stats.count() << ","
            << r.stats.sum() << ","
            << r.stats.min() << ","
@@ -107,6 +110,15 @@ const vector<Range<size_t>> countRanges{
     // {1'000'000, 10'000'000 - 1},
 };
 
+using DataGenerator = string (*)(Range<size_t>);
+
+/** Incompressible vs compressible data */
+const vector<pair<string, DataGenerator>> dataTypes{
+    {"incompressible", utils::randBlob},
+    {"compressible", utils::randClob},
+};
+
+
 /** Picks a random key from the store */
 std::string pickKey(StorePtr& store) {
    return utils::genKey(utils::randInt<size_t>(0, store->count() - 1));
@@ -116,13 +128,14 @@ path getStorePath(stores::Type type) {
     return path("out") / "stores" / stores::types.at(type);
 }
 
-StorePtr initStore(stores::Type type, size_t recordCount, Range<size_t> sizeRange) {
+StorePtr initStore(stores::Type type, size_t recordCount, Range<size_t> sizeRange, DataGenerator dataGen) {
     StorePtr store = getStore(type, getStorePath(type));
     for (size_t i = 0; i < recordCount; i++) {
-        store->insert(utils::genKey(store->count()), utils::randBlob(sizeRange));
+        store->insert(utils::genKey(store->count()), dataGen(sizeRange));
     }
     return store;
 }
+
 
 vector<BenchmarkData> runBenchmark() {
     filesystem::remove_all("out/stores");
@@ -132,22 +145,23 @@ vector<BenchmarkData> runBenchmark() {
 
     for (auto sizeRange : sizeRanges)
     for (auto countRange : countRanges)
+    for (auto [dataType, dataGen] : dataTypes)
     for (auto [type, typeName] : stores::types) {
-        StorePtr store = initStore(type, countRange.min, sizeRange);
+        StorePtr store = initStore(type, countRange.min, sizeRange, dataGen);
 
-        BenchmarkData insertData{typeName, "insert", sizeRange, countRange};
+        BenchmarkData insertData{typeName, "insert", sizeRange, countRange, dataType};
         for (int rep = 0; rep < REPEATS; rep++) {
             if (store->count() >= countRange.max) { // on small sizes repeat may be more than size range
                 store.reset(); // close the store first (LevelDB has a lock)
-                store = initStore(type, countRange.min, sizeRange);
+                store = initStore(type, countRange.min, sizeRange, dataGen);
             }
             string key = utils::genKey(store->count());
-            string value = utils::randBlob(sizeRange);
+            string value = dataGen(sizeRange);
             auto time = utils::timeIt([&]() { store->insert(key, value); });
             insertData.stats.record(time.count());
         }
 
-        BenchmarkData getData{typeName, "get", sizeRange, countRange};
+        BenchmarkData getData{typeName, "get", sizeRange, countRange, dataType};
         for (int rep = 0; rep < REPEATS; rep++) {
             string key = pickKey(store);
             string value;
@@ -155,22 +169,22 @@ vector<BenchmarkData> runBenchmark() {
             getData.stats.record(time.count());
         }
 
-        BenchmarkData updateData{typeName, "update", sizeRange, countRange};
+        BenchmarkData updateData{typeName, "update", sizeRange, countRange, dataType};
         for (int rep = 0; rep < REPEATS; rep++) {
             string key = pickKey(store);
-            string value = utils::randBlob(sizeRange);
+            string value = dataGen(sizeRange);
             auto time = utils::timeIt([&]() { store->update(key, value); });
             updateData.stats.record(time.count());
         }
 
-        BenchmarkData removeData{typeName, "remove", sizeRange, countRange};
+        BenchmarkData removeData{typeName, "remove", sizeRange, countRange, dataType};
         for (int rep = 0; rep < REPEATS; rep++) {
             string key = pickKey(store);
             auto time = utils::timeIt([&]() { store->remove(key); });
             removeData.stats.record(time.count());
 
             // Put the key back so we don't have to worry about if a key from genKey is still in the Store
-            string value = utils::randBlob(sizeRange);
+            string value = dataGen(sizeRange);
             store->insert(key, value);
         }
 
@@ -182,7 +196,7 @@ vector<BenchmarkData> runBenchmark() {
         size_t diskSize = utils::diskUsage(filepath);
         int spaceEfficiencyPercent = std::round(((double) dataSize / diskSize) * 100);
 
-        BenchmarkData spaceData{typeName, "space", sizeRange, countRange};
+        BenchmarkData spaceData{typeName, "space", sizeRange, countRange, dataType};
         spaceData.stats.record(spaceEfficiencyPercent); // store as percent
 
         records.insert(records.end(), {insertData, updateData, getData, removeData, spaceData});
