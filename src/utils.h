@@ -22,9 +22,17 @@ namespace utils {
         return randRange(randGen);
     }
 
+    /** Generate a random, incompressible, binary string of the given size */
     std::string randBlob(size_t size);
 
+    /** Generate a random, incompressible, binary string within the given size range */
     std::string randBlob(Range<size_t> size);
+
+    /** Generate a random, compressible, text string of the given size */
+    std::string randClob(size_t size);
+
+    /** Generate a random, compressible, text string within the given size range */
+    std::string randClob(Range<size_t> size);
 
     std::string intToHex(long long i, int width);
 

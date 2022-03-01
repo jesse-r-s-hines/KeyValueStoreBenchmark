@@ -7,6 +7,7 @@
 #include <vector>
 #include <cmath>
 #include <algorithm>
+#include <fstream>
 
 #include <boost/process.hpp>
 #include <boost/uuid/detail/sha1.hpp>
@@ -14,9 +15,10 @@
 #include "utils.h"
 
 namespace utils {
-    using std::string, std::filesystem::path, std::vector;
+    using std::string, std::filesystem::path, std::vector, std::ofstream, std::ifstream;
     namespace process = boost::process;
     namespace chrono = std::chrono;
+    namespace filesystem = std::filesystem;
     using boost::uuids::detail::sha1;
 
     std::random_device randomDevice;
@@ -30,8 +32,62 @@ namespace utils {
         return blob;
     }
 
-    std::string randBlob(Range<size_t> size) {
+    string randBlob(Range<size_t> size) {
         return randBlob(randInt(size.min, size.max));
+    }
+
+    const path randomTextFolder = "build/compressibleText";
+
+    string randClob(size_t size) {
+        struct FileInfo {
+            path file; size_t size;
+        };
+        // Cache the file list and file sizes between calls
+        static vector<FileInfo> filesSizeInfo;
+        static size_t filesTotalSize = 0;
+        if (filesTotalSize == 0) {
+            for (auto file : filesystem::directory_iterator(randomTextFolder)) {
+                if (file.path().extension() == ".txt") {
+                    filesSizeInfo.push_back({file.path(), file.file_size()});
+                    filesTotalSize += file.file_size();
+                }
+            }
+        }
+
+
+        // Pick an evenly distributed substr of all the files by conceptually concatenating them all then picking a
+        // random substr from that. We need the sizes of all files to do that without actually reading all in.
+        // This implementation will probably have issues with variable width encodings (UTF-8)...
+        size_t start = randInt<size_t>(0, filesTotalSize - size);
+        size_t end = start + size;
+
+        size_t pos = 0;
+        auto fileInfo = filesSizeInfo.begin();
+        for (; pos + fileInfo->size < start; fileInfo++) {
+            pos += fileInfo->size;
+        }
+
+        string clob(size, '\0');
+        while (pos < end) {
+            ifstream file(fileInfo->file, ifstream::in|ifstream::binary);
+            if (pos < start) {
+                file.seekg(start - pos);
+                pos = start;
+            }
+
+            auto bufferPos = pos - start;
+            auto remainingFile = fileInfo->size - file.tellg();
+            file.read(&clob[bufferPos], std::min(remainingFile, size - bufferPos)); // read up to EOF or end of buffer
+
+            pos += remainingFile;
+            fileInfo++;
+        }
+
+        return clob;
+    }
+
+    std::string randClob(Range<size_t> size) {
+        return randClob(randInt(size.min, size.max));
     }
 
     string intToHex(long long i, int width) {
