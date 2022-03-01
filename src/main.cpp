@@ -193,6 +193,8 @@ vector<BenchmarkData> runBenchmark() {
 
 
 int main(int argc, char** argv) {
+    filesystem::current_path(filesystem::absolute(argv[0]).parent_path().c_str());
+
     doctest::Context context;
     context.setOption("minimal", true); // only show if errors occur.
     context.applyCommandLine(argc, argv);

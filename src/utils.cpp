@@ -36,7 +36,7 @@ namespace utils {
         return randBlob(randInt(size.min, size.max));
     }
 
-    const path randomTextFolder = "build/compressibleText";
+    const path randomTextFolder = "./compressibleText";
 
     string randClob(size_t size) {
         struct FileInfo {
