@@ -154,10 +154,15 @@ vector<BenchmarkData> runBenchmark() {
 
     vector<BenchmarkData> records;
 
+    utils::resetPeakMemUsage();
+    size_t baseMemUsage = utils::getPeakMemUsage(); // We'll subtract the base from future measurements
+
     for (auto sizeRange : sizeRanges)
     for (auto countRange : countRanges)
     for (auto [dataType, dataGen] : dataTypes)
     for (auto [type, typeName] : stores::types) {
+        utils::resetPeakMemUsage();
+
         StorePtr store = initStore(type, countRange.min, sizeRange, dataGen);
 
         BenchmarkData insertData{typeName, "insert", sizeRange, countRange, dataType};
@@ -199,6 +204,10 @@ vector<BenchmarkData> runBenchmark() {
             store->insert(key, value);
         }
 
+        size_t peakMem = std::max((signed long long) (utils::getPeakMemUsage() - baseMemUsage), 0LL);
+        BenchmarkData memoryData{typeName, "memory", sizeRange, countRange, dataType};
+        memoryData.stats.record(peakMem);
+
         path filepath = store->filepath;
         // Maybe we could keep a count of the exact size? (But updates would complicate that...)
         size_t dataSize = store->count() * ((sizeRange.min + sizeRange.max) / 2.0);
@@ -210,7 +219,7 @@ vector<BenchmarkData> runBenchmark() {
         BenchmarkData spaceData{typeName, "space", sizeRange, countRange, dataType};
         spaceData.stats.record(spaceEfficiencyPercent); // store as percent
 
-        records.insert(records.end(), {insertData, updateData, getData, removeData, spaceData});
+        records.insert(records.end(), {insertData, updateData, getData, removeData, memoryData, spaceData});
     }
 
     return records;
