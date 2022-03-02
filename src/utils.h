@@ -53,6 +53,13 @@ namespace utils {
 
     long long diskUsage(const std::filesystem::path& filepath);
 
+    /** Gets the peak memory usage of the process in kilobytes */
+    size_t getPeakMemUsage();
+
+    /** Reset the peak memory usage (So we can get peak mem for an interval) */
+    void resetPeakMemUsage();
+
+
     /** Convert size in bytes to a human readable string */
     std::string prettySize(std::size_t size);
 

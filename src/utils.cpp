@@ -8,6 +8,7 @@
 #include <cmath>
 #include <algorithm>
 #include <fstream>
+#include <sys/resource.h>
 
 #include <boost/process.hpp>
 #include <boost/uuid/detail/sha1.hpp>
@@ -138,6 +139,21 @@ namespace utils {
 
         return std::stol(outputStr);
     }
+
+    size_t getPeakMemUsage() {
+        // See https://man7.org/linux/man-pages/man2/getrusage.2.html
+        // Could also parse /proc/[pid]/status (see https://man7.org/linux/man-pages/man5/proc.5.html)
+        struct rusage info;
+        getrusage(RUSAGE_SELF, &info);
+        return info.ru_maxrss; // ru_maxrss is the resident set size in kB
+    }
+
+    void resetPeakMemUsage() {
+        // See https://man7.org/linux/man-pages/man5/proc.5.html
+        ofstream clearRefs("/proc/self/clear_refs");
+        clearRefs << "5";
+    }
+
 
     string prettySize(size_t size) {
         vector<string> units{"B", "KiB", "MiB", "GiB"};
