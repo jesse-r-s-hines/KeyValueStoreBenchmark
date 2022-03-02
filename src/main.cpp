@@ -31,11 +31,22 @@ using utils::Range, utils::Stats, stores::Store, utils::KiB, utils::MiB, utils::
 using StorePtr = std::unique_ptr<stores::Store>;
 
 struct BenchmarkData {
+    /** Which storage method */
     string store;
+    /** One of "insert", "update", "get", "remove", "space", "memory" */
     string op;
+    /** Size range in bytes */
     Range<size_t> size;
+    /** Record count range */
     Range<size_t> records;
+    /** One of "compressible", "incompressible" */
     string dataType;
+    /**
+     * The measurements taken. Units depend on the op:
+     * `insert`, `update`, `get`, `remove`: nanoseconds
+     * `space`: percent (space efficiency)
+     * `memory`: kilobytes (peak memory usage)
+     */
     Stats<long long> stats{};
 };
 
