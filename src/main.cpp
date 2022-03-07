@@ -107,17 +107,12 @@ const vector<Range<size_t>> sizeRanges{
     {1*KiB, 10*KiB - 1},
     // {10*KiB, 100*KiB - 1},
     // {100*KiB, 1*MiB - 1},
-    // {1*MiB, 10*MiB - 1},
 };
 
 /** Record count ranges to test [min, max] */
 const vector<Range<size_t>> countRanges{
-    {1, 10 - 1},
-    {10, 100 - 1},
-    // {100, 1'000 - 1},
-    // {1'000, 10'000 - 1},
+    {100, 1'000 - 1},
     // {10'000, 100'000 - 1},
-    // {100'000, 1'000'000 - 1},
     // {1'000'000, 10'000'000 - 1},
 };
 
@@ -161,65 +156,68 @@ vector<BenchmarkData> runBenchmark() {
     for (auto countRange : countRanges)
     for (auto [dataType, dataGen] : dataTypes)
     for (auto [type, typeName] : stores::types) {
-        utils::resetPeakMemUsage();
+        double avgSize = (sizeRange.min + sizeRange.max) / 2.0;
+        if (avgSize * countRange.max > (10 * GiB)) { // Skip combinations that are very large
+            utils::resetPeakMemUsage();
 
-        StorePtr store = initStore(type, countRange.min, sizeRange, dataGen);
+            StorePtr store = initStore(type, countRange.min, sizeRange, dataGen);
 
-        BenchmarkData insertData{typeName, "insert", sizeRange, countRange, dataType};
-        for (int rep = 0; rep < REPEATS; rep++) {
-            if (store->count() >= countRange.max) { // on small sizes repeat may be more than size range
-                store.reset(); // close the store first (LevelDB has a lock)
-                store = initStore(type, countRange.min, sizeRange, dataGen);
+            BenchmarkData insertData{typeName, "insert", sizeRange, countRange, dataType};
+            for (int rep = 0; rep < REPEATS; rep++) {
+                if (store->count() >= countRange.max) { // on small sizes repeat may be more than size range
+                    store.reset(); // close the store first (LevelDB has a lock)
+                    store = initStore(type, countRange.min, sizeRange, dataGen);
+                }
+                string key = utils::genKey(store->count());
+                string value = dataGen(sizeRange);
+                auto time = utils::timeIt([&]() { store->insert(key, value); });
+                insertData.stats.record(time.count());
             }
-            string key = utils::genKey(store->count());
-            string value = dataGen(sizeRange);
-            auto time = utils::timeIt([&]() { store->insert(key, value); });
-            insertData.stats.record(time.count());
+
+            BenchmarkData getData{typeName, "get", sizeRange, countRange, dataType};
+            for (int rep = 0; rep < REPEATS; rep++) {
+                string key = pickKey(store);
+                string value;
+                auto time = utils::timeIt([&]() { value = store->get(key); });
+                getData.stats.record(time.count());
+            }
+
+            BenchmarkData updateData{typeName, "update", sizeRange, countRange, dataType};
+            for (int rep = 0; rep < REPEATS; rep++) {
+                string key = pickKey(store);
+                string value = dataGen(sizeRange);
+                auto time = utils::timeIt([&]() { store->update(key, value); });
+                updateData.stats.record(time.count());
+            }
+
+            BenchmarkData removeData{typeName, "remove", sizeRange, countRange, dataType};
+            for (int rep = 0; rep < REPEATS; rep++) {
+                string key = pickKey(store);
+                auto time = utils::timeIt([&]() { store->remove(key); });
+                removeData.stats.record(time.count());
+
+                // Put the key back so we don't have to worry about if a key from genKey is still in the Store
+                string value = dataGen(sizeRange);
+                store->insert(key, value);
+            }
+
+            size_t peakMem = std::max((signed long long) (utils::getPeakMemUsage() - baseMemUsage), 0LL);
+            BenchmarkData memoryData{typeName, "memory", sizeRange, countRange, dataType};
+            memoryData.stats.record(peakMem);
+
+            path filepath = store->filepath;
+            // Maybe we could keep a count of the exact size? (But updates would complicate that...)
+            size_t dataSize = store->count() * avgSize;
+            store.reset(); // close the store
+
+            size_t diskSize = utils::diskUsage(filepath);
+            int spaceEfficiencyPercent = std::round(((double) dataSize / diskSize) * 100);
+
+            BenchmarkData spaceData{typeName, "space", sizeRange, countRange, dataType};
+            spaceData.stats.record(spaceEfficiencyPercent); // store as percent
+
+            records.insert(records.end(), {insertData, updateData, getData, removeData, memoryData, spaceData});
         }
-
-        BenchmarkData getData{typeName, "get", sizeRange, countRange, dataType};
-        for (int rep = 0; rep < REPEATS; rep++) {
-            string key = pickKey(store);
-            string value;
-            auto time = utils::timeIt([&]() { value = store->get(key); });
-            getData.stats.record(time.count());
-        }
-
-        BenchmarkData updateData{typeName, "update", sizeRange, countRange, dataType};
-        for (int rep = 0; rep < REPEATS; rep++) {
-            string key = pickKey(store);
-            string value = dataGen(sizeRange);
-            auto time = utils::timeIt([&]() { store->update(key, value); });
-            updateData.stats.record(time.count());
-        }
-
-        BenchmarkData removeData{typeName, "remove", sizeRange, countRange, dataType};
-        for (int rep = 0; rep < REPEATS; rep++) {
-            string key = pickKey(store);
-            auto time = utils::timeIt([&]() { store->remove(key); });
-            removeData.stats.record(time.count());
-
-            // Put the key back so we don't have to worry about if a key from genKey is still in the Store
-            string value = dataGen(sizeRange);
-            store->insert(key, value);
-        }
-
-        size_t peakMem = std::max((signed long long) (utils::getPeakMemUsage() - baseMemUsage), 0LL);
-        BenchmarkData memoryData{typeName, "memory", sizeRange, countRange, dataType};
-        memoryData.stats.record(peakMem);
-
-        path filepath = store->filepath;
-        // Maybe we could keep a count of the exact size? (But updates would complicate that...)
-        size_t dataSize = store->count() * ((sizeRange.min + sizeRange.max) / 2.0);
-        store.reset(); // close the store
-
-        size_t diskSize = utils::diskUsage(filepath);
-        int spaceEfficiencyPercent = std::round(((double) dataSize / diskSize) * 100);
-
-        BenchmarkData spaceData{typeName, "space", sizeRange, countRange, dataType};
-        spaceData.stats.record(spaceEfficiencyPercent); // store as percent
-
-        records.insert(records.end(), {insertData, updateData, getData, removeData, memoryData, spaceData});
     }
 
     return records;
