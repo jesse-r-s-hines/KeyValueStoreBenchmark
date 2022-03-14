@@ -45,8 +45,10 @@ struct BenchmarkData {
     Stats<long long> stats{};
 };
 
+/** A callable that generates random data for use as a value in the store */
 using DataGenerator = function<string(Range<size_t>)>;
 
+/** This class runs the actual benchmark */
 class Benchmark {
 public:
     /** Directory to save the stores */

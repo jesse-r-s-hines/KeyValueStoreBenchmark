@@ -1,3 +1,6 @@
+/**
+ * Defines wrappers around each of the different storage methods with a consistent inteface.
+ */
 #pragma once
 #include <string>
 #include <memory>
@@ -5,6 +8,7 @@
 #include <filesystem>
 
 namespace stores {
+    /** The different storage methods */
     enum class Type {
         SQLite3, LevelDB, RocksDB, BerkeleyDB, FlatFolder, NestedFolder
     };
@@ -14,10 +18,12 @@ namespace stores {
     /**
      * Abstract base class for a key-value store.
      * Can insert, update, get, and remove string keys and values.
+     * Keeps count of how many records are in the store.
      */
     class Store {
         size_t _count = 0;
     protected:
+        // subclasses will override these.
         virtual void _insert(const std::string& key, const std::string& value) = 0;
         virtual void _update(const std::string& key, const std::string& value) = 0;
         virtual std::string _get(const std::string& key) = 0;
@@ -43,7 +49,7 @@ namespace stores {
     };
 
     /**
-     * Factor to create a Store of the given type
+     * Factory to create a Store of the given type.
      * @param type The type of store to create
      * @param filepath Where to save the store
      */

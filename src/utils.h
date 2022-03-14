@@ -1,3 +1,6 @@
+/**
+ * Miscellaneous helper functions and classes.
+ */
 #pragma once
 #include <string>
 #include <vector>
@@ -7,6 +10,7 @@
 #include <random>
 
 namespace utils {
+    /** Represents a range of numeric values, inclusive, [min, max] */
     template<typename T>
     struct Range { T min; T max; };
 
@@ -51,11 +55,12 @@ namespace utils {
     std::string randHash(int size);
 
     /**
-     * Generate a random key by hashing a number. This allows us to easily get a random key from the store without
-     * having to save all the keys we've added.
+     * Generate a random string key by hashing a number. This allows us to easily get a random key from the store
+     * without having to save all the keys we've added.
      */
     std::string genKey(size_t i);
 
+    /** Returns the time taken to run func */
     std::chrono::nanoseconds timeIt(std::function<void()> func);
 
 
@@ -63,16 +68,26 @@ namespace utils {
     const size_t MiB __attribute__((unused)) = 1024 * KiB;
     const size_t GiB __attribute__((unused)) = 1024 * MiB;
 
+    /**
+     * Returns the actual disk usage of the given file or folder, including any wasted space due to clustering.
+     * Uses the `du` command.
+     */
     long long diskUsage(const std::filesystem::path& filepath);
 
-    /** Gets the peak memory usage of the process in kilobytes */
+    /**
+     * Gets the peak memory usage of the process so far, in kilobytes.
+     * Uses the `getrusage` syscall. You can use `resetPeakMemUsage` to reset the peak memory and get the peak memory
+     * over a specific period of time.
+     */
     size_t getPeakMemUsage();
 
-    /** Reset the peak memory usage (So we can get peak mem for an interval) */
+    /**
+     * Reset the peak memory usage, so we can get the peak memory for an interval)
+     */
     void resetPeakMemUsage();
 
 
-    /** Convert size in bytes to a human readable string */
+    /** Convert size in bytes to a human readable string. */
     std::string prettySize(std::size_t size);
 
 

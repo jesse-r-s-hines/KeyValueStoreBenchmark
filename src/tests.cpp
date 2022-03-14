@@ -1,3 +1,6 @@
+/**
+ * Some basic tests to make each store type is working properly.
+ */
 #include <filesystem>
 #include <memory>
 #include <map>

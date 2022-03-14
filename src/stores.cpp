@@ -22,6 +22,11 @@ namespace stores {
     using uint = unsigned int;
 
 
+    /**
+     * Wrapper around SQLite. Uses SQLite3 as a key-value store by just setting up a single table with the key as the
+     * primary index.
+     * See https://www.sqlite.org
+     */
     class SQLite3Store : public Store {
         sqlite3* db = nullptr;
         sqlite3_stmt* insertStmt = nullptr;
@@ -133,6 +138,10 @@ namespace stores {
     };
 
 
+    /**
+     * Wrapper around LevelDB.
+     * See https://github.com/google/leveldb
+     */
     class LevelDBStore : public Store {
         leveldb::DB* db;
 
@@ -179,6 +188,10 @@ namespace stores {
     };
 
 
+    /**
+     * Wrapper around RocksDB.
+     * See http://rocksdb.org
+     */
     class RocksDBStore : public Store {
         rocksdb::DB* db;
 
@@ -226,8 +239,11 @@ namespace stores {
 
 
     /**
-     * See https://docs.oracle.com/cd/E17076_05/html/gsg/CXX/BerkeleyDB-Core-Cxx-GSG.pdf and
-     * https://docs.oracle.com/database/bdb181/html/api_reference/CXX/frame_main.html for docs
+     * Wrapper around Berkeley DB.
+     * See:
+     * - https://www.oracle.com/database/technologies/related/berkeleydb.html
+     * - https://docs.oracle.com/cd/E17076_05/html/gsg/CXX/BerkeleyDB-Core-Cxx-GSG.pdf
+     * - https://docs.oracle.com/database/bdb181/html/api_reference/CXX/frame_main.html
      */
     class BerkeleyDBStore : public Store {
         Db db;
@@ -284,7 +300,7 @@ namespace stores {
 
 
     /**
-     * Stores each record as a file with its key as the name.
+     * Stores each record as a file in a single folder with its key as the file name.
      */
     class FlatFolderStore : public Store {
         path getPath(const string& key) {
@@ -341,9 +357,9 @@ namespace stores {
      * 
      * Note: This does not hash the keys for you, and keys should be fixed width.
      * 
-     * @param charsPerLevel The number of chars in each level of the name
+     * @param charsPerLevel The number of characters of the name used in each "level" of nesting
      * @param depth The depth of the tree (0 will use all available chars)
-     * @param keyLen The size of each key
+     * @param keyLen The size of each key (Should be at least depth * charsPerLevel)
      */
     class NestedFolderStore : public Store {
         uint charsPerLevel;
@@ -403,13 +419,14 @@ namespace stores {
         }
 
         void _remove(const string& key) override {
-            // TODO potential improvement, delete empty directories left. Though that could slow it down as well
+            // TODO potential improvement, delete empty directories
             fs::remove(getPath(key));
         }
     };
 
 
 
+    /** Maps each Store class to its Enum and a string name. */
     std::map<std::type_index, std::tuple<Type, string>> storeInfo {
         {typeid(SQLite3Store), {Type::SQLite3, "SQLite3"}},
         {typeid(LevelDBStore), {Type::LevelDB, "LevelDB"}},
