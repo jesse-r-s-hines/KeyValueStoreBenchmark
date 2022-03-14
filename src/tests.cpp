@@ -101,15 +101,4 @@ namespace tests {
             }
         }
     }
-
-    TEST_CASE("Merge maps") {
-        map<string, int> map1{{"A", 1}, {"B", 2}};
-        map<string, int> map2{{"C", 3}};
-        map<string, int> map3{{"A", 0}};
-        map<string, int> expected{{"A", 0}, {"B", 2}, {"C", 3}};
-
-        REQUIRE(utils::merge(map1, map2, map3) == expected);
-        REQUIRE(utils::merge(map1) == map1);
-
-    }
 }

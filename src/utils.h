@@ -78,16 +78,6 @@ namespace utils {
     /** Convert size in bytes to a human readable string */
     std::string prettySize(std::size_t size);
 
-    /**
-     * Returns a new map that contains values of all the given maps.
-     */
-    template<typename MapLike, typename... MapLikes>
-    MapLike merge(const MapLike first, const MapLikes&... rest) {
-        MapLike rtrn = first;
-        (std::for_each(rest.begin(), rest.end(), [&](auto& pair) { rtrn[pair.first] = pair.second; }), ...);
-        return rtrn;
-    };
-
     /** Keeps the average and other statistics. */
     template<typename T>
     class Stats {
