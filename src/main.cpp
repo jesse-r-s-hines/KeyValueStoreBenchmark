@@ -53,32 +53,19 @@ using DataGenerator = function<string(Range<size_t>)>;
 class Benchmark {
 public:
     /** Directory to save the stores */
-    path storeDir = "out/stores";
+    path storeDir;
 
     /** How many iterations of each measurement to do */
-    const int repeats = 100;
+    const int repeats;
 
     /** Size ranges to test [min, max] */
-    const vector<Range<size_t>> sizeRanges{
-        {1, 1*KiB - 1},
-        // {1*KiB, 10*KiB - 1},
-        // {10*KiB, 100*KiB - 1},
-        // {100*KiB, 1*MiB - 1},
-    };
+    const vector<Range<size_t>> sizeRanges;
 
     /** Record count ranges to test [min, max] */
-    const vector<Range<size_t>> countRanges{
-        {100, 1'000 - 1},
-        // {10'000, 100'000 - 1},
-        // {1'000'000, 10'000'000 - 1},
-    };
+    const vector<Range<size_t>> countRanges;
 
-    utils::ClobGenerator randClob{"./randomText"};
     /** Incompressible vs compressible data */
-    const vector<pair<string, DataGenerator>> dataTypes {
-        {"incompressible", [](auto size) { return utils::randBlob(size); }},
-        {"compressible", randClob},
-    };
+    const vector<pair<string, DataGenerator>> dataTypes;
 
 
     /** Picks a random key from the store */
@@ -206,7 +193,24 @@ int main(int argc, char** argv) {
     filesystem::create_directories(outFilePath.parent_path());
     std::ofstream output(outFilePath);
 
-    Benchmark benchmark{};
+    utils::ClobGenerator randClob{"./randomText"};
+    Benchmark benchmark{
+        "out/stores", // storeDir
+        100, // repeats
+        { // sizeRanges
+            {1, 1*KiB - 1},
+            // {1*KiB, 10*KiB - 1},
+            // {10*KiB, 100*KiB - 1},
+            // {100*KiB, 1*MiB - 1},
+        }, { // countRanges
+            {100, 1'000 - 1},
+            // {10'000, 100'000 - 1},
+            // {1'000'000, 10'000'000 - 1},
+        }, { // dataTypes
+            {"incompressible", [](auto size) { return utils::randBlob(size); }},
+            {"compressible", randClob},
+        },
+    };
     benchmark.run(output);
 
     std::cout << "Benchmark written to " << std::quoted(outFilePath.native()) << "\n";
