@@ -157,7 +157,7 @@ vector<BenchmarkData> runBenchmark() {
     for (auto [dataType, dataGen] : dataTypes)
     for (auto [type, typeName] : stores::types) {
         double avgSize = (sizeRange.min + sizeRange.max) / 2.0;
-        if (avgSize * countRange.max > (10 * GiB)) { // Skip combinations that are very large
+        if (avgSize * countRange.max < (10 * GiB)) { // Skip combinations that are very large
             utils::resetPeakMemUsage();
 
             StorePtr store = initStore(type, countRange.min, sizeRange, dataGen);
