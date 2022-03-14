@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <vector>
 #include <functional>
 #include <filesystem>
 #include <chrono>
@@ -28,11 +29,25 @@ namespace utils {
     /** Generate a random, incompressible, binary string within the given size range */
     std::string randBlob(Range<size_t> size);
 
-    /** Generate a random, compressible, text string of the given size */
-    std::string randClob(size_t size);
+    /** Class to generate a random, compressible, text string */
+    class ClobGenerator {
+    private:
+        std::filesystem::path textFolder;
+        struct FileInfo {
+            std::filesystem::path file; size_t size;
+        };
+        std::vector<FileInfo> fileSizes;
+        size_t filesTotalSize;
+    public:
+        /** Creates the clob, chooses text from files in the given folder */
+        ClobGenerator(const std::filesystem::path& textFolder);
 
-    /** Generate a random, compressible, text string within the given size range */
-    std::string randClob(Range<size_t> size);
+        /** Generate a random, compressible, text string of the given size */
+        std::string operator()(size_t size); 
+
+        /** Generate a random, compressible, text string within the given size range */
+        std::string operator()(Range<size_t> size); 
+    };
 
     std::string intToHex(long long i, int width);
 

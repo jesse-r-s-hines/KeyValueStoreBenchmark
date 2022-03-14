@@ -1,5 +1,6 @@
 build/*
 out/*
+randomText/*
 vcpkg
 
 # Created by https://www.toptal.com/developers/gitignore/api/c++,cmake,vcpkg

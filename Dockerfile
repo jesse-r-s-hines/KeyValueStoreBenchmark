@@ -22,6 +22,6 @@ RUN ./scripts/build.sh
 FROM base as benchmark
 WORKDIR /benchmark
 COPY --from=builder /benchmark/build/benchmark ./
-COPY --from=builder /benchmark/build/compressibleText ./compressibleText
+COPY --from=builder /benchmark/randomText ./randomText
 
 CMD ["/benchmark/benchmark"]

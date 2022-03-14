@@ -37,33 +37,25 @@ namespace utils {
         return randBlob(randInt(size.min, size.max));
     }
 
-    const path randomTextFolder = "./compressibleText";
-
-    string randClob(size_t size) {
-        struct FileInfo {
-            path file; size_t size;
-        };
-        // Cache the file list and file sizes between calls
-        static vector<FileInfo> filesSizeInfo;
-        static size_t filesTotalSize = 0;
-        if (filesTotalSize == 0) {
-            for (auto file : filesystem::directory_iterator(randomTextFolder)) {
-                if (file.path().extension() == ".txt") {
-                    filesSizeInfo.push_back({file.path(), file.file_size()});
-                    filesTotalSize += file.file_size();
-                }
+    ClobGenerator::ClobGenerator(const filesystem::path& textFolder) : textFolder(textFolder), filesTotalSize(0) {
+        // Cache the file list
+        for (auto file : filesystem::directory_iterator(this->textFolder)) {
+            if (file.path().extension() == ".txt") {
+                this->fileSizes.push_back({file.path(), file.file_size()});
+                filesTotalSize += file.file_size();
             }
         }
+    }
 
-
+    string ClobGenerator::operator()(size_t size) {
         // Pick an evenly distributed substr of all the files by conceptually concatenating them all then picking a
         // random substr from that. We need the sizes of all files to do that without actually reading all in.
         // This implementation will probably have issues with variable width encodings (UTF-8)...
-        size_t start = randInt<size_t>(0, filesTotalSize - size);
+        size_t start = randInt<size_t>(0, this->filesTotalSize - size);
         size_t end = start + size;
 
         size_t pos = 0;
-        auto fileInfo = filesSizeInfo.begin();
+        auto fileInfo = this->fileSizes.begin();
         for (; pos + fileInfo->size < start; fileInfo++) {
             pos += fileInfo->size;
         }
@@ -87,8 +79,8 @@ namespace utils {
         return clob;
     }
 
-    std::string randClob(Range<size_t> size) {
-        return randClob(randInt(size.min, size.max));
+    string ClobGenerator::operator()(Range<size_t> size){
+        return (*this)(randInt(size.min, size.max));
     }
 
     string intToHex(long long i, int width) {
@@ -125,6 +117,7 @@ namespace utils {
         auto stop = chrono::steady_clock::now();
         return chrono::duration_cast<chrono::nanoseconds>(stop - start);
     }
+
 
     long long diskUsage(const path& filepath) {
         // TODO make a windows version of this?

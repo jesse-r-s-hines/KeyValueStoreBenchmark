@@ -23,7 +23,8 @@
 namespace chrono = std::chrono;
 namespace filesystem = std::filesystem;
 using namespace std::string_literals;
-using std::vector, std::map, std::tuple, std::pair, std::string, filesystem::path, std::size_t;
+using std::vector, std::map, std::tuple, std::pair, std::string, filesystem::path, std::size_t, std::to_string;
+using std::function;
 using utils::Range, utils::Stats, stores::Store, utils::KiB, utils::MiB, utils::GiB;
 using StorePtr = std::unique_ptr<stores::Store>;
 
@@ -45,28 +46,21 @@ struct BenchmarkData {
      * `memory`: kilobytes (peak memory usage)
      */
     Stats<long long> stats{};
-};
 
-string benchmarkDataToCSV(vector<BenchmarkData> data) {
-    std::stringstream ss;
-    ss << "store,op,size,records,data type,measurements,sum,min,max,avg\n";
-
-    for (auto& r : data) {
-        ss << r.store << ","
-           << r.op << ","
-           << utils::prettySize(r.size.min) + " to " + utils::prettySize(r.size.max + 1) << ","
-           << std::to_string(r.records.min) + " to " + std::to_string(r.records.max) << ","
-           << r.dataType << ","
-           << r.stats.count() << ","
-           << r.stats.sum() << ","
-           << r.stats.min() << ","
-           << r.stats.max() << ","
-           << r.stats.avg() << "\n";
+    inline static const string CSV_HEADER = "store,op,size,records,data type,measurements,sum,min,max,avg\n";
+    string toCSVRow() const {
+        return this->store + "," +
+            this->op + "," +
+            utils::prettySize(this->size.min) + " to " + utils::prettySize(this->size.max + 1) + "," +
+            std::to_string(this->records.min) + " to " + std::to_string(this->records.max) + "," +
+            this->dataType + "," +
+            to_string(this->stats.count()) + "," +
+            to_string(this->stats.sum()) + "," +
+            to_string(this->stats.min()) + "," +
+            to_string(this->stats.max()) + "," +
+            to_string(this->stats.avg()) + "\n";
     }
-
-    return ss.str();
-}
-
+};
 
 /** How many iterations of each measurement to do */
 const int REPEATS = 100;
@@ -86,12 +80,12 @@ const vector<Range<size_t>> countRanges{
     // {1'000'000, 10'000'000 - 1},
 };
 
-using DataGenerator = string (*)(Range<size_t>);
-
+using DataGenerator = function<string(Range<size_t>)>;
+utils::ClobGenerator randClob("./randomText");
 /** Incompressible vs compressible data */
 const vector<pair<string, DataGenerator>> dataTypes{
-    {"incompressible", utils::randBlob},
-    {"compressible", utils::randClob},
+    {"incompressible", [](auto size) { return utils::randBlob(size); }},
+    {"compressible", randClob},
 };
 
 
@@ -100,24 +94,19 @@ std::string pickKey(StorePtr& store) {
    return utils::genKey(utils::randInt<size_t>(0, store->count() - 1));
 }
 
-path getStorePath(stores::Type type) {
-    return path("out") / "stores" / stores::types.at(type);
-}
-
-StorePtr initStore(stores::Type type, size_t recordCount, Range<size_t> sizeRange, DataGenerator dataGen) {
-    StorePtr store = getStore(type, getStorePath(type));
+StorePtr initStore(path storeDir, stores::Type type, size_t recordCount, Range<size_t> sizeRange, DataGenerator dataGen) {
+    StorePtr store = getStore(type, storeDir / stores::types.at(type));
     for (size_t i = 0; i < recordCount; i++) {
         store->insert(utils::genKey(store->count()), dataGen(sizeRange));
     }
     return store;
 }
 
-
-vector<BenchmarkData> runBenchmark() {
-    filesystem::remove_all("out/stores");
-    filesystem::create_directories("out/stores");
-
-    vector<BenchmarkData> records;
+/** Runs the benchmark. Pass directory to put stores in and file to save CSV data to */
+void runBenchmark(path storeDir, std::ostream& output) {
+    filesystem::remove_all(storeDir); // clear the storeDir
+    filesystem::create_directories(storeDir);
+    output << BenchmarkData::CSV_HEADER;
 
     utils::resetPeakMemUsage();
     size_t baseMemUsage = utils::getPeakMemUsage(); // We'll subtract the base from future measurements
@@ -130,13 +119,13 @@ vector<BenchmarkData> runBenchmark() {
         if (avgSize * countRange.max < (10 * GiB)) { // Skip combinations that are very large
             utils::resetPeakMemUsage();
 
-            StorePtr store = initStore(type, countRange.min, sizeRange, dataGen);
+            StorePtr store = initStore(storeDir, type, countRange.min, sizeRange, dataGen);
 
             BenchmarkData insertData{typeName, "insert", sizeRange, countRange, dataType};
             for (int rep = 0; rep < REPEATS; rep++) {
                 if (store->count() >= countRange.max) { // on small sizes repeat may be more than size range
                     store.reset(); // close the store first (LevelDB has a lock)
-                    store = initStore(type, countRange.min, sizeRange, dataGen);
+                    store = initStore(storeDir, type, countRange.min, sizeRange, dataGen);
                 }
                 string key = utils::genKey(store->count());
                 string value = dataGen(sizeRange);
@@ -186,17 +175,15 @@ vector<BenchmarkData> runBenchmark() {
             BenchmarkData spaceData{typeName, "space", sizeRange, countRange, dataType};
             spaceData.stats.record(spaceEfficiencyPercent); // store as percent
 
-            records.insert(records.end(), {insertData, updateData, getData, removeData, memoryData, spaceData});
+            for (auto& data : {insertData, updateData, getData, removeData, memoryData, spaceData}) {
+                output << data.toCSVRow();
+            }
         }
     }
-
-    return records;
 }
 
 
 int main(int argc, char** argv) {
-    filesystem::current_path(filesystem::absolute(argv[0]).parent_path().c_str());
-
     doctest::Context context;
     context.setOption("minimal", true); // only show if errors occur.
     context.applyCommandLine(argc, argv);
@@ -205,17 +192,15 @@ int main(int argc, char** argv) {
 
     std::cout << "Starting benchmark...\n";
 
-    vector<BenchmarkData> data = runBenchmark();
-
     const std::time_t now = chrono::system_clock::to_time_t(chrono::system_clock::now());
     std::stringstream nowStr;
     nowStr << std::put_time(std::localtime(&now), "%Y%m%d%H%M%S");
-
-    std::ofstream output;
     path outFilePath = path("out") / "benchmarks" / ("benchmark"s + nowStr.str() + ".csv");
+
     filesystem::create_directories(outFilePath.parent_path());
-    output.open(outFilePath);
-    output << benchmarkDataToCSV(data);
-    
+    std::ofstream output(outFilePath);
+
+    runBenchmark("out/stores", output);
+
     std::cout << "Benchmark written to " << std::quoted(outFilePath.native()) << "\n";
 }
