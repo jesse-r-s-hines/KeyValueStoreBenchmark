@@ -4,13 +4,10 @@
 #include <memory>
 #include <chrono>
 #include <vector>
-#include <map>
-#include <tuple>
 #include <iomanip>
 #include <ctime>
 #include <sstream>
 #include <algorithm>
-#include <cmath>
 #include <functional>
 
 #include "stores.h"
@@ -20,11 +17,11 @@
 #include "doctest/doctest.h"
 #include "tests.cpp"
 
+namespace fs = std::filesystem;
+using fs::path;
 namespace chrono = std::chrono;
-namespace filesystem = std::filesystem;
 using namespace std::string_literals;
-using std::vector, std::map, std::tuple, std::pair, std::string, filesystem::path, std::size_t, std::to_string;
-using std::function;
+using std::string, std::to_string, std::vector, std::pair, std::function;
 using utils::Range, utils::Stats, stores::Store, utils::KiB, utils::MiB, utils::GiB;
 using StorePtr = std::unique_ptr<stores::Store>;
 
@@ -69,7 +66,7 @@ public:
 
 
     /** Picks a random key from the store */
-    std::string pickKey(StorePtr& store) const {
+    string pickKey(StorePtr& store) const {
         return utils::genKey(utils::randInt<size_t>(0, store->count() - 1));
     }
 
@@ -86,7 +83,7 @@ public:
         return data.store + "," +
             data.op + "," +
             utils::prettySize(data.size.min) + " to " + utils::prettySize(data.size.max + 1) + "," +
-            std::to_string(data.records.min) + " to " + std::to_string(data.records.max) + "," +
+            to_string(data.records.min) + " to " + to_string(data.records.max) + "," +
             data.dataType + "," +
             to_string(data.stats.count()) + "," +
             to_string(data.stats.sum()) + "," +
@@ -97,8 +94,8 @@ public:
 
     /** Runs the benchmark. Pass the output stream to save CSV data to */
     void run(std::ostream& output) {
-        filesystem::remove_all(storeDir); // clear the storeDir
-        filesystem::create_directories(storeDir);
+        fs::remove_all(storeDir); // clear the storeDir
+        fs::create_directories(storeDir);
         output << CSV_HEADER;
 
         utils::resetPeakMemUsage();
@@ -190,7 +187,7 @@ int main(int argc, char** argv) {
     nowStr << std::put_time(std::localtime(&now), "%Y%m%d%H%M%S");
     path outFilePath = path("out") / "benchmarks" / ("benchmark"s + nowStr.str() + ".csv");
 
-    filesystem::create_directories(outFilePath.parent_path());
+    fs::create_directories(outFilePath.parent_path());
     std::ofstream output(outFilePath);
 
     utils::ClobGenerator randClob{"./randomText"};

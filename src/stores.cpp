@@ -1,4 +1,3 @@
-#include <optional>
 #include <memory>
 #include <filesystem>
 #include <fstream>
@@ -15,11 +14,12 @@
 #include "stores.h"
 
 namespace stores {
-    using std::string, std::optional, std::tuple, std::unique_ptr, std::make_unique, std::to_string;
-    using std::size_t, std::filesystem::path, std::function, std::ofstream, std::ifstream;
-    using uint = unsigned int;
-    namespace filesystem = std::filesystem;
+    namespace fs = std::filesystem;
+    using fs::path;
+    using std::ofstream, std::ifstream;
     using namespace std::string_literals;
+    using std::string, std::to_string, std::tuple, std::function, std::unique_ptr, std::make_unique;
+    using uint = unsigned int;
 
 
     class SQLite3Store : public Store {
@@ -37,7 +37,7 @@ namespace stores {
 
     public:
         SQLite3Store(const path& filepath) : Store(filepath) {
-            filesystem::remove_all(filepath);
+            fs::remove_all(filepath);
             int s = sqlite3_open(filepath.c_str(), &db);
             checkStatus(s);
             char* errMmsg = nullptr;
@@ -132,6 +132,7 @@ namespace stores {
         }
     };
 
+
     class LevelDBStore : public Store {
         leveldb::DB* db;
 
@@ -143,7 +144,7 @@ namespace stores {
 
     public:
         LevelDBStore(const path& filepath) : Store(filepath) {
-            filesystem::remove_all(filepath);
+            fs::remove_all(filepath);
             leveldb::Options options;
             options.create_if_missing = true;
             
@@ -177,6 +178,7 @@ namespace stores {
         }
     };
 
+
     class RocksDBStore : public Store {
         rocksdb::DB* db;
 
@@ -188,7 +190,7 @@ namespace stores {
 
     public:
         RocksDBStore(const path& filepath) : Store(filepath) {
-            filesystem::remove_all(filepath);
+            fs::remove_all(filepath);
             rocksdb::Options options;
             options.create_if_missing = true;
             
@@ -222,6 +224,7 @@ namespace stores {
         }
     };
 
+
     /**
      * See https://docs.oracle.com/cd/E17076_05/html/gsg/CXX/BerkeleyDB-Core-Cxx-GSG.pdf and
      * https://docs.oracle.com/database/bdb181/html/api_reference/CXX/frame_main.html for docs
@@ -242,7 +245,7 @@ namespace stores {
 
     public:
         BerkeleyDBStore(const path& filepath) : Store(filepath), db(NULL, 0) {
-            filesystem::remove_all(filepath);
+            fs::remove_all(filepath);
             
             int s = db.open(NULL, filepath.c_str(), NULL, DB_BTREE, DB_CREATE, 0);
             checkStatus(s);
@@ -279,6 +282,7 @@ namespace stores {
         }
     };
 
+
     /**
      * Stores each record as a file with its key as the name.
      */
@@ -289,8 +293,8 @@ namespace stores {
 
     public:
         FlatFolderStore(const path& filepath) : Store(filepath) {
-            filesystem::remove_all(filepath);
-            filesystem::create_directories(filepath);
+            fs::remove_all(filepath);
+            fs::create_directories(filepath);
         }
 
         void _insert(const string& key, const string& value) override {
@@ -318,9 +322,10 @@ namespace stores {
         }
 
         void _remove(const string& key) override {
-            filesystem::remove(getPath(key));
+            fs::remove(getPath(key));
         }
     };
+
 
     /**
      * Stores each record as a file with its key as the name. To avoid putting large numbers of files in a single
@@ -367,13 +372,13 @@ namespace stores {
             charsPerLevel(charsPerLevel),
             depth(depth == 0 ? keyLen / charsPerLevel + (keyLen % charsPerLevel != 0) : depth),
             keyLen(keyLen) {
-            filesystem::remove_all(filepath);
-            filesystem::create_directories(filepath);
+            fs::remove_all(filepath);
+            fs::create_directories(filepath);
         }
 
         void _insert(const string& key, const string& value) override {
             path path = getPath(key);
-            filesystem::create_directories(path.parent_path());
+            fs::create_directories(path.parent_path());
             ofstream file(path, ofstream::out|ofstream::binary|ofstream::trunc);
             file.write(value.c_str(), value.size());
         }
@@ -399,9 +404,11 @@ namespace stores {
 
         void _remove(const string& key) override {
             // TODO potential improvement, delete empty directories left. Though that could slow it down as well
-            filesystem::remove(getPath(key));
+            fs::remove(getPath(key));
         }
     };
+
+
 
     std::map<std::type_index, std::tuple<Type, string>> storeInfo {
         {typeid(SQLite3Store), {Type::SQLite3, "SQLite3"}},
@@ -416,6 +423,7 @@ namespace stores {
         for (auto& [type, info] : storeInfo) result[std::get<0>(info)] = std::get<1>(info);
         return result;
     }();
+
 
     unique_ptr<Store> getStore(Type type, const path& filepath) {
         switch (type) {
@@ -437,6 +445,7 @@ namespace stores {
         }
         throw std::runtime_error("Unknown type"); // Shouldn't be possible
     };
+
 
     Store::Store(const path& filepath) : filepath(filepath) {};
     

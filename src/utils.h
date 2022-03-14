@@ -4,9 +4,6 @@
 #include <functional>
 #include <filesystem>
 #include <chrono>
-#include <map>
-#include <algorithm>
-#include <type_traits>
 #include <random>
 
 namespace utils {
@@ -77,6 +74,7 @@ namespace utils {
 
     /** Convert size in bytes to a human readable string */
     std::string prettySize(std::size_t size);
+
 
     /** Keeps the average and other statistics. */
     template<typename T>

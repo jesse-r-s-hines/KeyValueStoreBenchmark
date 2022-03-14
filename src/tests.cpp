@@ -1,4 +1,3 @@
-#include <iostream>
 #include <filesystem>
 #include <memory>
 #include <map>
@@ -11,14 +10,14 @@
 #include "utils.h"
 
 namespace tests {
-    namespace filesystem = std::filesystem;
+    namespace fs = std::filesystem;
+    using fs::path;
     using namespace std::string_literals;
-    using std::unique_ptr, std::make_unique, std::vector, std::map, std::array, std::pair, std::string;
-    using filesystem::path;
+    using std::string, std::vector, std::map, std::unique_ptr;
 
     TEST_CASE("Test Stores") {
-        filesystem::remove_all("out/tests");
-        filesystem::create_directories("out/tests/");
+        fs::remove_all("out/tests");
+        fs::create_directories("out/tests/");
 
         SUBCASE("Basic") {
             for (auto& [type, typeName] : stores::types) {
@@ -56,24 +55,23 @@ namespace tests {
         }
     }
 
-
     TEST_CASE("Test deletes if exists") {
-        filesystem::remove_all("out/tests");
-        filesystem::create_directories("out/tests/");
+        fs::remove_all("out/tests");
+        fs::create_directories("out/tests/");
 
         for (auto [type, typeName] : stores::types) {
             string filepath = path("out") / "tests" / typeName;
             INFO(filepath);
             string key = utils::randHash(32); 
 
-            REQUIRE(!filesystem::exists(filepath));
+            REQUIRE(!fs::exists(filepath));
             { // create the store, and then close it.
                 auto store = stores::getStore(type, filepath);
                 REQUIRE(store->filepath == filepath);
 
                 store->insert(key, "value");
             }
-            REQUIRE(filesystem::exists(filepath));
+            REQUIRE(fs::exists(filepath));
 
             {
                 auto store = stores::getStore(type, filepath);
@@ -83,9 +81,9 @@ namespace tests {
     }
 
     TEST_CASE("Test multiple records") {
-        // Make a bunch of records. Run this last so can examine the db manually as well.
-        filesystem::remove_all("out/tests");
-        filesystem::create_directories("out/tests/");
+        // Make a bunch of records. Run this last so we can examine the db manually as well.
+        fs::remove_all("out/tests");
+        fs::create_directories("out/tests/");
 
         vector<unique_ptr<stores::Store>> stores{};
         for (auto [type, typeName] : stores::types)

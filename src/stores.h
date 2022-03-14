@@ -16,7 +16,7 @@ namespace stores {
      * Can insert, update, get, and remove string keys and values.
      */
     class Store {
-        std::size_t _count = 0;
+        size_t _count = 0;
     protected:
         virtual void _insert(const std::string& key, const std::string& value) = 0;
         virtual void _update(const std::string& key, const std::string& value) = 0;

@@ -16,10 +16,11 @@
 #include "utils.h"
 
 namespace utils {
-    using std::string, std::filesystem::path, std::vector, std::ofstream, std::ifstream;
-    namespace process = boost::process;
+    namespace fs = std::filesystem;
+    using fs::path;
+    using std::string, std::vector, std::ofstream, std::ifstream;
     namespace chrono = std::chrono;
-    namespace filesystem = std::filesystem;
+    namespace process = boost::process;
     using boost::uuids::detail::sha1;
 
     std::random_device randomDevice;
@@ -37,9 +38,9 @@ namespace utils {
         return randBlob(randInt(size.min, size.max));
     }
 
-    ClobGenerator::ClobGenerator(const filesystem::path& textFolder) : textFolder(textFolder), filesTotalSize(0) {
+    ClobGenerator::ClobGenerator(const path& textFolder) : textFolder(textFolder), filesTotalSize(0) {
         // Cache the file list
-        for (auto file : filesystem::directory_iterator(this->textFolder)) {
+        for (auto file : fs::directory_iterator(this->textFolder)) {
             if (file.path().extension() == ".txt") {
                 this->fileSizes.push_back({file.path(), file.file_size()});
                 filesTotalSize += file.file_size();
@@ -98,7 +99,7 @@ namespace utils {
         return hash;
     }
 
-    std::string genKey(size_t i) {
+    string genKey(size_t i) {
         sha1 hash;
         hash.process_bytes(reinterpret_cast<void*>(&i), sizeof(i));
         hash.process_byte(136); // An arbitrary salt
@@ -110,6 +111,7 @@ namespace utils {
             ss << std::setfill('0') << std::setw(sizeof(part) * 2) << std::hex << part;
         return ss.str().substr(0, 32);
     }
+
 
     chrono::nanoseconds timeIt(std::function<void()> func) {
         auto start = chrono::steady_clock::now();
