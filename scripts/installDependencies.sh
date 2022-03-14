@@ -17,7 +17,6 @@ fi
     sqlite3 \
     rocksdb[lz4] \
     leveldb \
-    boost-json \
     boost-process \
     boost-uuid \
     doctest \

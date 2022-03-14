@@ -13,8 +13,6 @@
 #include <cmath>
 #include <functional>
 
-#include <boost/json/src.hpp>
-
 #include "stores.h"
 #include "utils.h"
 
@@ -22,7 +20,6 @@
 #include "doctest/doctest.h"
 #include "tests.cpp"
 
-namespace json = boost::json;
 namespace chrono = std::chrono;
 namespace filesystem = std::filesystem;
 using namespace std::string_literals;
@@ -49,33 +46,6 @@ struct BenchmarkData {
      */
     Stats<long long> stats{};
 };
-
-/** Custom boost JSON conversion. */
-void tag_invoke(const json::value_from_tag&, json::value& jv, BenchmarkData const& r) {
-    jv = {
-        {"store", r.store},
-        {"op", r.op},
-        {"size", utils::prettySize(r.size.min) + "-" + utils::prettySize(r.size.max + 1)},
-        {"records", std::to_string(r.records.min) + "-" + std::to_string(r.records.max)},
-        {"dataType", r.dataType},
-        {"measurements", r.stats.count()},
-        {"sum", r.stats.sum()},
-        {"min", r.stats.min()},
-        {"max", r.stats.max()},
-        {"avg", r.stats.avg()},
-    };
-}
-
-string benchmarkDataToJSON(vector<BenchmarkData> data) {
-    std::stringstream ss;
-    ss << "[\n";
-    for (size_t i = 0; i < data.size() - 1; i++)
-        ss << "    " << json::value_from(data[i]) << ",\n";
-    if (data.size() > 0)
-        ss << "    " << json::value_from(data.back()) << "\n";
-    ss << "]\n";
-    return ss.str();
-}
 
 string benchmarkDataToCSV(vector<BenchmarkData> data) {
     std::stringstream ss;
@@ -241,22 +211,11 @@ int main(int argc, char** argv) {
     std::stringstream nowStr;
     nowStr << std::put_time(std::localtime(&now), "%Y%m%d%H%M%S");
 
-    string format = "csv"; // or json
-    string outFileName;
-    string strRepr;
-    if (format == "csv") {
-        outFileName = "benchmark"s + nowStr.str() + ".csv";
-        strRepr = benchmarkDataToCSV(data);
-    } else {
-        outFileName = "benchmark"s + nowStr.str() + ".json";
-        strRepr = benchmarkDataToJSON(data);
-    }
-
     std::ofstream output;
-    path outFilePath = path("out") / "benchmarks" / outFileName;
+    path outFilePath = path("out") / "benchmarks" / ("benchmark"s + nowStr.str() + ".csv");
     filesystem::create_directories(outFilePath.parent_path());
     output.open(outFilePath);
-    output << strRepr;
+    output << benchmarkDataToCSV(data);
     
     std::cout << "Benchmark written to " << std::quoted(outFilePath.native()) << "\n";
 }
