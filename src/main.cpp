@@ -107,8 +107,8 @@ public:
         for (auto countRange : countRanges)
         for (auto [dataType, dataGen] : dataTypes)
         for (auto [type, typeName] : stores::types) {
-            double avgSize = (sizeRange.min + sizeRange.max) / 2.0;
-            if (avgSize * countRange.max < (10 * GiB)) { // Skip combinations that are very large
+            double avgRecordSize = (sizeRange.min + sizeRange.max) / 2.0;
+            if (avgRecordSize * countRange.max < (10 * GiB)) { // Skip combinations that are very large
                 utils::resetPeakMemUsage();
 
                 StorePtr store = initStore(type, countRange.min, sizeRange, dataGen);
@@ -158,7 +158,7 @@ public:
 
                 path filepath = store->filepath;
                 // Maybe we could keep a count of the exact size? (But updates would complicate that...)
-                size_t dataSize = store->count() * avgSize;
+                size_t dataSize = store->count() * avgRecordSize;
                 store.reset(); // close the store
 
                 size_t diskSize = utils::diskUsage(filepath);
