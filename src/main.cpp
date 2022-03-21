@@ -68,7 +68,7 @@ public:
 
 
     /** Picks a random key from the store */
-    string pickKey(StorePtr& store) const {
+    string pickKey(const StorePtr& store) const {
         return utils::genKey(utils::randInt<size_t>(0, store->count() - 1));
     }
 
@@ -78,6 +78,18 @@ public:
             store->insert(utils::genKey(store->count()), dataGen(sizeRange));
         }
         return store;
+    }
+
+    /** Iterates over the store and gets the total data size on disk. */
+    size_t getDataSize(StorePtr& store) {
+        // probably could keep a running count as we make it instead, but we'd have to get to measure size before
+        // update/remove (which could cause complications with caching). Or we'd need to close the database after
+        // inserts so we can measure size on disk and then reopen or regenerate it to benchmark update/remove.
+        size_t dataSize = 0;
+        for (size_t i = 0; i < store->count(); i++) {
+            dataSize += store->get(utils::genKey(i)).size();
+        }
+        return dataSize;
     }
 
     inline static const string CSV_HEADER = "store,op,size,records,data type,measurements,sum,min,max,avg\n";
@@ -157,8 +169,7 @@ public:
                 memoryData.stats.record(peakMem);
 
                 path filepath = store->filepath;
-                // Maybe we could keep a count of the exact size? (But updates would complicate that...)
-                size_t dataSize = store->count() * avgRecordSize;
+                size_t dataSize = getDataSize(store);
                 store.reset(); // close the store
 
                 size_t diskSize = utils::diskUsage(filepath);
