@@ -211,13 +211,13 @@ int main(int argc, char** argv) {
         100, // repeats
         { // sizeRanges
             {1, 1*KiB - 1},
-            // {1*KiB, 10*KiB - 1},
-            // {10*KiB, 100*KiB - 1},
-            // {100*KiB, 1*MiB - 1},
+            {1*KiB, 10*KiB - 1},
+            {10*KiB, 100*KiB - 1},
+            {100*KiB, 1*MiB - 1},
         }, { // countRanges
             {100, 1'000 - 1},
-            // {10'000, 100'000 - 1},
-            // {1'000'000, 10'000'000 - 1},
+            {10'000, 100'000 - 1},
+            {1'000'000, 10'000'000 - 1},
         }, { // dataTypes
             {"incompressible", [](auto size) { return utils::randBlob(size); }},
             {"compressible", randClob},
