@@ -175,6 +175,8 @@ public:
                 size_t diskSize = utils::diskUsage(filepath);
                 int spaceEfficiencyPercent = std::round(((double) dataSize / diskSize) * 100);
 
+                fs::remove_all(filepath); // Delete the store files
+
                 BenchmarkData spaceData{typeName, "space", sizeRange, countRange, dataType};
                 spaceData.stats.record(spaceEfficiencyPercent); // store as percent
 
