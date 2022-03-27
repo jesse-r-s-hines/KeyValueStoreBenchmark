@@ -113,9 +113,9 @@ public:
 
             double avgRecordSize = (sizeRange.min + sizeRange.max) / 2.0;
             if (avgRecordSize * countRange.min < (10 * GiB)) { // Skip combinations that are very large
-                std::cout << typeName << " : " << dataType << " : "
-                          << utils::prettySize(sizeRange.min) << " - " << utils::prettySize(sizeRange.max) << " : "
-                          << countRange.min << " - " << countRange.max << "\n";
+                std::cout << typeName << ", " << dataType << ", "
+                          << utils::prettySize(sizeRange.min) << " to " << utils::prettySize(sizeRange.max) << ", "
+                          << countRange.min << " to " << countRange.max << "\n";
 
                 utils::resetPeakMemUsage();
 
@@ -179,6 +179,7 @@ public:
                 output << getCSVRow(typeName, "remove", pattern, removeStats);
                 output << getCSVRow(typeName, "memory", pattern, memoryStats);
                 output << getCSVRow(typeName, "space", pattern, spaceStats);
+                output.flush();
             }
         }
     }
