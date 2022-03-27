@@ -120,7 +120,7 @@ public:
         for (auto sizeRange : sizeRanges)
         for (auto countRange : countRanges) {
             double avgRecordSize = (sizeRange.min + sizeRange.max) / 2.0;
-            if (avgRecordSize * countRange.max < (10 * GiB)) { // Skip combinations that are very large
+            if (avgRecordSize * countRange.min < (10 * GiB)) { // Skip combinations that are very large
                 utils::resetPeakMemUsage();
 
                 StorePtr store = initStore(type, countRange.min, sizeRange, dataGen);
