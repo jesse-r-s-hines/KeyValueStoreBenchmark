@@ -30,7 +30,7 @@ struct UsagePattern {
     /** Size range in bytes */
     Range<size_t> size;
     /** Record count range */
-    Range<size_t> records;
+    Range<size_t> count;
     /** One of "compressible", "incompressible" */
     string dataType;
 };
@@ -87,7 +87,7 @@ public:
         return store + "," +
             op + "," +
             utils::prettySize(pattern.size.min) + " to " + utils::prettySize(pattern.size.max + 1) + "," +
-            to_string(pattern.records.min) + " to " + to_string(pattern.records.max) + "," +
+            to_string(pattern.count.min) + " to " + to_string(pattern.count.max) + "," +
             pattern.dataType + "," +
             to_string(stats.count()) + "," +
             to_string(stats.sum()) + "," +
@@ -105,7 +105,7 @@ public:
         utils::resetPeakMemUsage();
         size_t baseMemUsage = utils::getPeakMemUsage(); // We'll subtract the base from future measurements
 
-        for (auto [type, typeName] : stores::types)
+        for (auto [storeType, storeName] : stores::types)
         for (auto [dataType, dataGen] : dataTypes)
         for (auto sizeRange : sizeRanges)
         for (auto countRange : countRanges) {
@@ -113,19 +113,19 @@ public:
 
             double avgRecordSize = (sizeRange.min + sizeRange.max) / 2.0;
             if (avgRecordSize * countRange.min < (10 * GiB)) { // Skip combinations that are very large
-                std::cout << typeName << ", " << dataType << ", "
+                std::cout << storeName << ", " << dataType << ", "
                           << utils::prettySize(sizeRange.min) << " to " << utils::prettySize(sizeRange.max) << ", "
                           << countRange.min << " to " << countRange.max << "\n";
 
                 utils::resetPeakMemUsage();
 
-                StorePtr store = initStore(type, countRange.min, sizeRange, dataGen);
+                StorePtr store = initStore(storeType, countRange.min, sizeRange, dataGen);
 
                 Stats insertStats;
                 for (int rep = 0; rep < repeats; rep++) {
                     if (store->count() >= countRange.max) { // on small sizes repeat may be more than size range
                         store.reset(); // close the store first (LevelDB has a lock)
-                        store = initStore(type, countRange.min, sizeRange, dataGen);
+                        store = initStore(storeType, countRange.min, sizeRange, dataGen);
                     }
                     string key = utils::genKey(store->count());
                     string value = dataGen(sizeRange);
@@ -173,12 +173,12 @@ public:
 
                 fs::remove_all(filepath); // Delete the store files
 
-                output << getCSVRow(typeName, "insert", pattern, insertStats);
-                output << getCSVRow(typeName, "update", pattern, updateStats);
-                output << getCSVRow(typeName, "get", pattern, getStats);
-                output << getCSVRow(typeName, "remove", pattern, removeStats);
-                output << getCSVRow(typeName, "memory", pattern, memoryStats);
-                output << getCSVRow(typeName, "space", pattern, spaceStats);
+                output << getCSVRow(storeName, "insert", pattern, insertStats);
+                output << getCSVRow(storeName, "update", pattern, updateStats);
+                output << getCSVRow(storeName, "get", pattern, getStats);
+                output << getCSVRow(storeName, "remove", pattern, removeStats);
+                output << getCSVRow(storeName, "memory", pattern, memoryStats);
+                output << getCSVRow(storeName, "space", pattern, spaceStats);
                 output.flush();
             }
         }
