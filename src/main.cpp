@@ -121,6 +121,10 @@ public:
         for (auto countRange : countRanges) {
             double avgRecordSize = (sizeRange.min + sizeRange.max) / 2.0;
             if (avgRecordSize * countRange.min < (10 * GiB)) { // Skip combinations that are very large
+                std::cout << typeName << " : " << dataType << " : "
+                          << utils::prettySize(sizeRange.min) << " - " << utils::prettySize(sizeRange.max) << " : "
+                          << countRange.min << " - " << countRange.max << "\n";
+
                 utils::resetPeakMemUsage();
 
                 StorePtr store = initStore(type, countRange.min, sizeRange, dataGen);
