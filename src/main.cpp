@@ -25,17 +25,22 @@ using std::string, std::to_string, std::vector, std::pair, std::function;
 using utils::Range, utils::Stats, stores::Store, utils::KiB, utils::MiB, utils::GiB;
 using StorePtr = std::unique_ptr<stores::Store>;
 
-struct BenchmarkData {
-    /** Which storage method */
-    string store;
-    /** One of "insert", "update", "get", "remove", "space", "memory" */
-    string op;
+struct UsagePattern {
     /** Size range in bytes */
     Range<size_t> size;
     /** Record count range */
     Range<size_t> records;
     /** One of "compressible", "incompressible" */
     string dataType;
+};
+
+struct BenchmarkData {
+    /** Which storage method */
+    string store;
+    /** One of "insert", "update", "get", "remove", "space", "memory" */
+    string op;
+    /** Usage pattern (size, count, data type) */
+    UsagePattern pattern;
     /**
      * The measurements taken. Units depend on the op:
      * `insert`, `update`, `get`, `remove`: nanoseconds
@@ -96,9 +101,9 @@ public:
     static string toCSVRow(const BenchmarkData& data) {
         return data.store + "," +
             data.op + "," +
-            utils::prettySize(data.size.min) + " to " + utils::prettySize(data.size.max + 1) + "," +
-            to_string(data.records.min) + " to " + to_string(data.records.max) + "," +
-            data.dataType + "," +
+            utils::prettySize(data.pattern.size.min) + " to " + utils::prettySize(data.pattern.size.max + 1) + "," +
+            to_string(data.pattern.records.min) + " to " + to_string(data.pattern.records.max) + "," +
+            data.pattern.dataType + "," +
             to_string(data.stats.count()) + "," +
             to_string(data.stats.sum()) + "," +
             to_string(data.stats.min()) + "," +
@@ -119,6 +124,8 @@ public:
         for (auto [dataType, dataGen] : dataTypes)
         for (auto sizeRange : sizeRanges)
         for (auto countRange : countRanges) {
+            UsagePattern pattern{sizeRange, countRange, dataType};
+
             double avgRecordSize = (sizeRange.min + sizeRange.max) / 2.0;
             if (avgRecordSize * countRange.min < (10 * GiB)) { // Skip combinations that are very large
                 std::cout << typeName << " : " << dataType << " : "
@@ -129,7 +136,7 @@ public:
 
                 StorePtr store = initStore(type, countRange.min, sizeRange, dataGen);
 
-                BenchmarkData insertData{typeName, "insert", sizeRange, countRange, dataType};
+                BenchmarkData insertData{typeName, "insert", pattern};
                 for (int rep = 0; rep < repeats; rep++) {
                     if (store->count() >= countRange.max) { // on small sizes repeat may be more than size range
                         store.reset(); // close the store first (LevelDB has a lock)
@@ -141,7 +148,7 @@ public:
                     insertData.stats.record(time.count());
                 }
 
-                BenchmarkData getData{typeName, "get", sizeRange, countRange, dataType};
+                BenchmarkData getData{typeName, "get", pattern};
                 for (int rep = 0; rep < repeats; rep++) {
                     string key = pickKey(store);
                     string value;
@@ -149,7 +156,7 @@ public:
                     getData.stats.record(time.count());
                 }
 
-                BenchmarkData updateData{typeName, "update", sizeRange, countRange, dataType};
+                BenchmarkData updateData{typeName, "update", pattern};
                 for (int rep = 0; rep < repeats; rep++) {
                     string key = pickKey(store);
                     string value = dataGen(sizeRange);
@@ -157,7 +164,7 @@ public:
                     updateData.stats.record(time.count());
                 }
 
-                BenchmarkData removeData{typeName, "remove", sizeRange, countRange, dataType};
+                BenchmarkData removeData{typeName, "remove", pattern};
                 for (int rep = 0; rep < repeats; rep++) {
                     string key = pickKey(store);
                     auto time = utils::timeIt([&]() { store->remove(key); });
@@ -169,7 +176,7 @@ public:
                 }
 
                 size_t peakMem = std::max((signed long long) (utils::getPeakMemUsage() - baseMemUsage), 0LL);
-                BenchmarkData memoryData{typeName, "memory", sizeRange, countRange, dataType};
+                BenchmarkData memoryData{typeName, "memory", pattern};
                 memoryData.stats.record(peakMem);
 
                 path filepath = store->filepath;
@@ -181,7 +188,7 @@ public:
 
                 fs::remove_all(filepath); // Delete the store files
 
-                BenchmarkData spaceData{typeName, "space", sizeRange, countRange, dataType};
+                BenchmarkData spaceData{typeName, "space", pattern};
                 spaceData.stats.record(spaceEfficiencyPercent); // store as percent
 
                 for (auto& data : {insertData, updateData, getData, removeData, memoryData, spaceData}) {
