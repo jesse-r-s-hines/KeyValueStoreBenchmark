@@ -22,8 +22,9 @@ using fs::path;
 namespace chrono = std::chrono;
 using namespace std::string_literals;
 using std::string, std::to_string, std::vector, std::pair, std::function;
-using utils::Range, utils::Stats, stores::Store, utils::KiB, utils::MiB, utils::GiB;
+using utils::Range, stores::Store, utils::KiB, utils::MiB, utils::GiB;
 using StorePtr = std::unique_ptr<stores::Store>;
+using Stats = utils::Stats<long long>;
 
 struct UsagePattern {
     /** Size range in bytes */
@@ -32,22 +33,6 @@ struct UsagePattern {
     Range<size_t> records;
     /** One of "compressible", "incompressible" */
     string dataType;
-};
-
-struct BenchmarkData {
-    /** Which storage method */
-    string store;
-    /** One of "insert", "update", "get", "remove", "space", "memory" */
-    string op;
-    /** Usage pattern (size, count, data type) */
-    UsagePattern pattern;
-    /**
-     * The measurements taken. Units depend on the op:
-     * `insert`, `update`, `get`, `remove`: nanoseconds
-     * `space`: percent (space efficiency)
-     * `memory`: kilobytes (peak memory usage)
-     */
-    Stats<long long> stats{};
 };
 
 /** A callable that generates random data for use as a value in the store */
@@ -98,17 +83,17 @@ public:
     }
 
     inline static const string CSV_HEADER = "store,op,size,records,data type,measurements,sum,min,max,avg\n";
-    static string toCSVRow(const BenchmarkData& data) {
-        return data.store + "," +
-            data.op + "," +
-            utils::prettySize(data.pattern.size.min) + " to " + utils::prettySize(data.pattern.size.max + 1) + "," +
-            to_string(data.pattern.records.min) + " to " + to_string(data.pattern.records.max) + "," +
-            data.pattern.dataType + "," +
-            to_string(data.stats.count()) + "," +
-            to_string(data.stats.sum()) + "," +
-            to_string(data.stats.min()) + "," +
-            to_string(data.stats.max()) + "," +
-            to_string(data.stats.avg()) + "\n";
+    static string getCSVRow(const string& store, const string& op, const UsagePattern& pattern, const Stats& stats) {
+        return store + "," +
+            op + "," +
+            utils::prettySize(pattern.size.min) + " to " + utils::prettySize(pattern.size.max + 1) + "," +
+            to_string(pattern.records.min) + " to " + to_string(pattern.records.max) + "," +
+            pattern.dataType + "," +
+            to_string(stats.count()) + "," +
+            to_string(stats.sum()) + "," +
+            to_string(stats.min()) + "," +
+            to_string(stats.max()) + "," +
+            to_string(stats.avg()) + "\n";
     }
 
     /** Runs the benchmark. Pass the output stream to save CSV data to */
@@ -136,7 +121,7 @@ public:
 
                 StorePtr store = initStore(type, countRange.min, sizeRange, dataGen);
 
-                BenchmarkData insertData{typeName, "insert", pattern};
+                Stats insertStats;
                 for (int rep = 0; rep < repeats; rep++) {
                     if (store->count() >= countRange.max) { // on small sizes repeat may be more than size range
                         store.reset(); // close the store first (LevelDB has a lock)
@@ -145,39 +130,38 @@ public:
                     string key = utils::genKey(store->count());
                     string value = dataGen(sizeRange);
                     auto time = utils::timeIt([&]() { store->insert(key, value); });
-                    insertData.stats.record(time.count());
+                    insertStats.record(time.count());
                 }
 
-                BenchmarkData getData{typeName, "get", pattern};
+                Stats getStats;
                 for (int rep = 0; rep < repeats; rep++) {
                     string key = pickKey(store);
                     string value;
                     auto time = utils::timeIt([&]() { value = store->get(key); });
-                    getData.stats.record(time.count());
+                    getStats.record(time.count());
                 }
 
-                BenchmarkData updateData{typeName, "update", pattern};
+                Stats updateStats;
                 for (int rep = 0; rep < repeats; rep++) {
                     string key = pickKey(store);
                     string value = dataGen(sizeRange);
                     auto time = utils::timeIt([&]() { store->update(key, value); });
-                    updateData.stats.record(time.count());
+                    updateStats.record(time.count());
                 }
 
-                BenchmarkData removeData{typeName, "remove", pattern};
+                Stats removeStats;
                 for (int rep = 0; rep < repeats; rep++) {
                     string key = pickKey(store);
                     auto time = utils::timeIt([&]() { store->remove(key); });
-                    removeData.stats.record(time.count());
+                    removeStats.record(time.count());
 
                     // Put the key back so we don't have to worry about if a key from genKey is still in the Store
                     string value = dataGen(sizeRange);
                     store->insert(key, value);
                 }
 
-                size_t peakMem = std::max((signed long long) (utils::getPeakMemUsage() - baseMemUsage), 0LL);
-                BenchmarkData memoryData{typeName, "memory", pattern};
-                memoryData.stats.record(peakMem);
+                long long peakMem = std::max((signed long long) (utils::getPeakMemUsage() - baseMemUsage), 0LL);
+                Stats memoryStats{peakMem};
 
                 path filepath = store->filepath;
                 size_t dataSize = getDataSize(store);
@@ -185,15 +169,16 @@ public:
 
                 size_t diskSize = utils::diskUsage(filepath);
                 int spaceEfficiencyPercent = std::round(((double) dataSize / diskSize) * 100);
+                Stats spaceStats{spaceEfficiencyPercent}; // store as percent
 
                 fs::remove_all(filepath); // Delete the store files
 
-                BenchmarkData spaceData{typeName, "space", pattern};
-                spaceData.stats.record(spaceEfficiencyPercent); // store as percent
-
-                for (auto& data : {insertData, updateData, getData, removeData, memoryData, spaceData}) {
-                    output << toCSVRow(data);
-                }
+                output << getCSVRow(typeName, "insert", pattern, insertStats);
+                output << getCSVRow(typeName, "update", pattern, updateStats);
+                output << getCSVRow(typeName, "get", pattern, getStats);
+                output << getCSVRow(typeName, "remove", pattern, removeStats);
+                output << getCSVRow(typeName, "memory", pattern, memoryStats);
+                output << getCSVRow(typeName, "space", pattern, spaceStats);
             }
         }
     }
