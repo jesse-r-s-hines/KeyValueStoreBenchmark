@@ -256,7 +256,7 @@ int main(int argc, char** argv) {
     utils::ClobGenerator randClob{"./randomText"};
     Benchmark benchmark{
         "out/stores", // storeDir
-        100, // repeats
+        1000, // repeats
         10 * GiB, // maxDbSize
         {"LevelDB", "RocksDB", "BerkeleyDB", "FlatFolder", "NestedFolder", "SQLite3"}, // storeTypes
         storeFactory, // storeFactory
