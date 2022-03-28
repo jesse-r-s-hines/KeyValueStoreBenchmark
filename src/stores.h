@@ -40,10 +40,6 @@ namespace stores {
         Store(const std::filesystem::path& filepath);
         virtual ~Store() {}
 
-        /** Get the type of the underlying store */
-        Type type();
-        /** Get the type of the underlying store */
-        std::string typeName();
         /** Current number of records in the database */
         size_t count();
 

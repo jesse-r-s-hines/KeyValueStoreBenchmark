@@ -25,7 +25,6 @@ namespace tests {
         SUBCASE("Basic") {
             for (auto& [type, typeName] : stores::types) {
                 auto store = stores::getStore(type, path("out") / "tests" / typeName);
-                INFO(store->typeName());
                 string key = utils::randHash(32); 
 
                 store->insert(key, "value");
@@ -46,7 +45,6 @@ namespace tests {
             for (auto& [type, typeName] : stores::types) {
                 auto store = stores::getStore(type, path("out") / "tests" / typeName);
 
-                INFO(store->typeName());
                 string key = utils::randHash(32); 
 
                 store->insert(key, "hello\0world"s);
@@ -94,7 +92,6 @@ namespace tests {
 
         for (auto& store : stores) {
             for (int i = 0; i < 25; i++) {
-                INFO(store->typeName());
                 string key = utils::randHash(32);
                 string value = utils::randBlob(64);
                 store->insert(key, value);

@@ -18,6 +18,23 @@ namespace stores {
 
 
 
+    Store::Store(const path& filepath) : filepath(filepath) {};
+    
+    size_t Store::count() { return _count; };
+
+    void Store::insert(const string& key, const string& value) {
+        this->_insert(key, value);
+        _count++;
+    };
+    void Store::update(const string& key, const string& value) { this->_update(key, value); };
+    string Store::get(const string& key) { return this->_get(key); };
+    void Store::remove(const string& key) {
+        this->_remove(key);
+        _count--;
+    };
+
+
+
     SQLite3Store::SQLite3Store(const path& filepath) : Store(filepath) {
         fs::remove_all(filepath);
         int s = sqlite3_open(filepath.c_str(), &db);
@@ -387,23 +404,5 @@ namespace stores {
                 return make_unique<stores::NestedFolderStore>(filepath, 2, 3, 32);
         }
         throw std::runtime_error("Unknown type"); // Shouldn't be possible
-    };
-
-
-    Store::Store(const path& filepath) : filepath(filepath) {};
-    
-    Type Store::type() { return std::get<0>(storeInfo.at(typeid(*this))); };
-    std::string Store::typeName() { return types.at(this->type()); };
-    size_t Store::count() { return _count; };
-
-    void Store::insert(const string& key, const string& value) {
-        this->_insert(key, value);
-        _count++;
-    };
-    void Store::update(const string& key, const string& value) { this->_update(key, value); };
-    string Store::get(const string& key) { return this->_get(key); };
-    void Store::remove(const string& key) {
-        this->_remove(key);
-        _count--;
     };
 }
