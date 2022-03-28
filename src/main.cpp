@@ -106,7 +106,7 @@ public:
         return store + "," +
             op + "," +
             utils::prettySize(pattern.size.min) + " to " + utils::prettySize(pattern.size.max + 1) + "," +
-            to_string(pattern.count.min) + " to " + to_string(pattern.count.max) + "," +
+            to_string(pattern.count.min) + "," +
             pattern.dataType + "," +
             to_string(stats.count()) + "," +
             to_string(stats.sum()) + "," +
@@ -266,9 +266,11 @@ int main(int argc, char** argv) {
             {10*KiB, 100*KiB - 1},
             {100*KiB, 1*MiB - 1},
         }, { // countRanges
-            {100, 1'000 - 1},
-            {10'000, 100'000 - 1},
-            {1'000'000, 10'000'000 - 1},
+            {100, 500},
+            {1'000, 5'000},
+            {10'000, 50'000},
+            {100'000, 150'000},
+            {1'000'000, 1'050'000},
         }, { // dataTypes
             {"incompressible", [](auto size) { return utils::randBlob(size); }},
             {"compressible", randClob},
