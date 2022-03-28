@@ -146,6 +146,17 @@ namespace stores {
         checkStatus(s);
     }
 
+    void SQLite3Store::_bulkInsert(const vector<pair<string, string>>& items) {
+        // Wrapping in a transaction improves bulk insert performance significantly.
+        char* errMessage;
+        int s = sqlite3_exec(db, "BEGIN TRANSACTION", NULL, NULL, &errMessage);
+        checkStatus(s);
+        for (auto& [key, value] : items)
+            this->_insert(key, value);
+        sqlite3_exec(db, "COMMIT TRANSACTION", NULL, NULL, &errMessage);
+        checkStatus(s);
+    }
+
 
 
     LevelDBStore::LevelDBStore(const path& filepath, leveldb::Options options) : Store(filepath) {
