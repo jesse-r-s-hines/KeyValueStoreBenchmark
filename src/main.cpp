@@ -257,7 +257,7 @@ int main(int argc, char** argv) {
     Benchmark benchmark{
         "out/stores", // storeDir
         1000, // repeats
-        10 * GiB, // maxDbSize
+        50 * GiB, // maxDbSize
         {"LevelDB", "RocksDB", "BerkeleyDB", "FlatFolder", "NestedFolder", "SQLite3"}, // storeTypes
         storeFactory, // storeFactory
         { // sizeRanges
