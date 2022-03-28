@@ -1,6 +1,8 @@
 #include <memory>
 #include <filesystem>
 #include <fstream>
+#include <vector>
+#include <utility>
 
 #include "stores.h"
 
@@ -9,7 +11,7 @@ namespace stores {
     using fs::path;
     using std::ofstream, std::ifstream;
     using namespace std::string_literals;
-    using std::string, std::to_string, std::tuple, std::function, std::unique_ptr, std::make_unique;
+    using std::string, std::to_string, std::vector, std::pair, std::tuple, std::function, std::unique_ptr, std::make_unique;
     using uint = unsigned int;
 
 
@@ -28,6 +30,16 @@ namespace stores {
         this->_remove(key);
         _count--;
     };
+
+    void Store::_bulkInsert(const vector<pair<string, string>>& items) {
+        for (auto& [key, value] : items)
+            this->_insert(key, value);
+    }
+
+    void Store::bulkInsert(const vector<pair<string, string>>& items) {
+        this->_bulkInsert(items);
+        _count += items.size();
+    }
 
 
 

@@ -17,7 +17,7 @@ namespace tests {
     namespace fs = std::filesystem;
     using fs::path;
     using namespace std::string_literals;
-    using std::string, std::vector, std::map, std::function, std::unique_ptr, std::make_unique;
+    using std::string, std::vector, std::map, std::pair, std::function, std::unique_ptr, std::make_unique;
     using stores::Store;
 
     const string filepath = path("out") / "tests" / "store";
@@ -106,6 +106,21 @@ namespace tests {
                 store->insert(key, value);
                 REQUIRE(store->get(key) == value);
             }
+        }
+    }
+
+    TEST_CASE("Test bulk insert") {
+        // Make a bunch of records. Run this last so we can examine the db manually as well.
+        fs::remove_all("out/tests");
+        fs::create_directories("out/tests/");
+
+        for (auto& storeFactory : storeFactories) {
+            auto store = storeFactory();
+            string a = utils::randHash(32), b = utils::randHash(32), c = utils::randHash(32);
+            vector<pair<string, string>> data{ {a, "1"}, {b, "2"}, {c, "3"} };
+            store->bulkInsert(data);
+            REQUIRE(store->get(b) == "2");
+            REQUIRE(store->count() == 3);
         }
     }
 }

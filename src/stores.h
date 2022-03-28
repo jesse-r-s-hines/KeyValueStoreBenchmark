@@ -6,6 +6,8 @@
 #include <memory>
 #include <map>
 #include <filesystem>
+#include <vector>
+#include <utility>
 
 #include <sqlite3.h>
 #include "rocksdb/db.h"
@@ -26,7 +28,8 @@ namespace stores {
         virtual void _update(const std::string& key, const std::string& value) = 0;
         virtual std::string _get(const std::string& key) = 0;
         virtual void _remove(const std::string& key) = 0;
-        
+
+        virtual void _bulkInsert(const std::vector<std::pair<std::string, std::string>>& items);
     public:
         const std::filesystem::path filepath;
 
@@ -40,6 +43,9 @@ namespace stores {
         void update(const std::string& key, const std::string& value);
         std::string get(const std::string& key);
         void remove(const std::string& key);
+
+        /** A potentially more efficient bulk insert. All items should be unique. */
+        void bulkInsert(const std::vector<std::pair<std::string, std::string>>& items);
     };
 
     /**
