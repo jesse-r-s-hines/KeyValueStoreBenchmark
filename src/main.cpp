@@ -78,8 +78,13 @@ public:
 
     StorePtr initStore(string storeType, const UsagePattern& pattern, DataGenerator dataGen) {
         StorePtr store = storeFactory(storeType, storeDir / storeType, pattern);
-        for (size_t i = 0; i < pattern.count.min; i++) {
-            store->insert(utils::genKey(store->count()), dataGen(pattern.size));
+        int batchSize = 500;
+        for (size_t i = 0; i < pattern.count.min; i += batchSize) { // insert in 100 item batches
+            vector<pair<string, string>> batch;
+            for (size_t j = i; j < std::min(pattern.count.min, i + batchSize); j++) {
+                batch.push_back({utils::genKey(j), dataGen(pattern.size)});
+            }
+            store->bulkInsert(batch);
         }
         return store;
     }
