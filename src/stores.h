@@ -56,7 +56,8 @@ namespace stores {
 
         void checkStatus(int status);
     public:
-        SQLite3Store(const std::filesystem::path& filepath);
+        /** Create the store. Optionally pass flags from https://www.sqlite.org/c3ref/open.html */
+        SQLite3Store(const std::filesystem::path& filepath, int flags = 0);
 
         ~SQLite3Store();
 
@@ -80,7 +81,8 @@ namespace stores {
         void checkStatus(leveldb::Status status);
 
     public:
-        LevelDBStore(const std::filesystem::path& filepath);
+        /** Create the store. Optionally pass leveldb Options. */
+        LevelDBStore(const std::filesystem::path& filepath, leveldb::Options options = {});
 
         ~LevelDBStore();
 
@@ -104,7 +106,8 @@ namespace stores {
         void checkStatus(rocksdb::Status status);
 
     public:
-        RocksDBStore(const std::filesystem::path& filepath);
+        /** Create the store. Optionally pass rocksdb Options. */
+        RocksDBStore(const std::filesystem::path& filepath, rocksdb::Options options = {});
 
         ~RocksDBStore();
 
@@ -133,7 +136,11 @@ namespace stores {
         void checkStatus(int status);
 
     public:
-        BerkeleyDBStore(const std::filesystem::path& filepath);
+        /**
+         * Creates the store. Optionally pass DBTYPE and flags. See
+         * https://docs.oracle.com/database/bdb181/html/api_reference/CXX/frame_main.html `Db::open()`
+         */
+        BerkeleyDBStore(const std::filesystem::path& filepath, DBTYPE dbtype = DB_BTREE, u_int32_t flags = 0);
 
         ~BerkeleyDBStore();
 
@@ -179,10 +186,6 @@ namespace stores {
      *     - c87e4b5ce2fe28308fd9f2a7baf3
      * 
      * Note: This does not hash the keys for you, and keys should be fixed width.
-     * 
-     * @param charsPerLevel The number of characters of the name used in each "level" of nesting
-     * @param depth The depth of the tree (0 will use all available chars)
-     * @param keyLen The size of each key (Should be at least depth * charsPerLevel)
      */
     class NestedFolderStore : public Store {
         uint charsPerLevel;
@@ -192,6 +195,12 @@ namespace stores {
         std::filesystem::path getPath(const std::string& key);
 
     public:
+        /**
+         * Create the store.
+         * @param charsPerLevel The number of characters of the name used in each "level" of nesting
+         * @param depth The depth of the tree (0 will use all available chars)
+         * @param keyLen The size of each key (Should be at least depth * charsPerLevel)
+         */
         NestedFolderStore(const std::filesystem::path& filepath, uint charsPerLevel, uint depth, size_t keyLen);
 
         void _insert(const std::string& key, const std::string& value) override;

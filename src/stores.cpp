@@ -31,9 +31,11 @@ namespace stores {
 
 
 
-    SQLite3Store::SQLite3Store(const path& filepath) : Store(filepath) {
+    SQLite3Store::SQLite3Store(const path& filepath, int flags) : Store(filepath) {
         fs::remove_all(filepath);
-        int s = sqlite3_open(filepath.c_str(), &db);
+        flags = flags | SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE;
+
+        int s = sqlite3_open_v2(filepath.c_str(), &db, flags, NULL);
         checkStatus(s);
         char* errMmsg = nullptr;
 
@@ -134,9 +136,8 @@ namespace stores {
 
 
 
-    LevelDBStore::LevelDBStore(const path& filepath) : Store(filepath) {
+    LevelDBStore::LevelDBStore(const path& filepath, leveldb::Options options) : Store(filepath) {
         fs::remove_all(filepath);
-        leveldb::Options options;
         options.create_if_missing = true;
         
         leveldb::Status status = leveldb::DB::Open(options, filepath, &db);
@@ -176,9 +177,8 @@ namespace stores {
 
 
 
-    RocksDBStore::RocksDBStore(const path& filepath) : Store(filepath) {
+    RocksDBStore::RocksDBStore(const path& filepath, rocksdb::Options options) : Store(filepath) {
         fs::remove_all(filepath);
-        rocksdb::Options options;
         options.create_if_missing = true;
         
         rocksdb::Status status = rocksdb::DB::Open(options, filepath, &db);
@@ -218,10 +218,11 @@ namespace stores {
 
 
 
-    BerkeleyDBStore::BerkeleyDBStore(const path& filepath) : Store(filepath), db(NULL, 0) {
+    BerkeleyDBStore::BerkeleyDBStore(const path& filepath, DBTYPE dbtype, u_int32_t flags) : Store(filepath), db(NULL, 0) {
         fs::remove_all(filepath);
+        flags = flags | DB_CREATE;
         
-        int s = db.open(NULL, filepath.c_str(), NULL, DB_BTREE, DB_CREATE, 0);
+        int s = db.open(NULL, filepath.c_str(), NULL, dbtype, flags, 0);
         checkStatus(s);
     }
 
