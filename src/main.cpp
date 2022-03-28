@@ -201,12 +201,20 @@ public:
 };
 
 
-StorePtr storeFactory(string storeType, path filepath, const UsagePattern&) {
+StorePtr storeFactory(string storeType, path filepath, const UsagePattern& pattern) {
     if (storeType == "SQLite3") {
         return make_unique<stores::SQLite3Store>(filepath);
     } else if (storeType == "LevelDB") {
+        leveldb::Options options;
+        options.compression = (pattern.dataType == "compressible") ?
+            leveldb::CompressionType::kSnappyCompression :
+            leveldb::CompressionType::kNoCompression;
         return make_unique<stores::LevelDBStore>(filepath);
     } else if (storeType == "RocksDB") {
+        rocksdb::Options options;
+        options.compression = (pattern.dataType == "compressible") ?
+            rocksdb::CompressionType::kSnappyCompression :
+            rocksdb::CompressionType::kNoCompression;
         return make_unique<stores::RocksDBStore>(filepath);
     } else if (storeType == "BerkeleyDB") {
         return make_unique<stores::BerkeleyDBStore>(filepath);
