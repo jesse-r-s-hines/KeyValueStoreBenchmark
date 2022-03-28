@@ -13,13 +13,6 @@
 #include <berkeleydb/include/db_cxx.h>
 
 namespace stores {
-    /** The different storage methods */
-    enum class Type {
-        SQLite3, LevelDB, RocksDB, BerkeleyDB, FlatFolder, NestedFolder
-    };
-    /** Maps all the store Types to a string name */
-    extern const std::map<Type, std::string> types;
-
     /**
      * Abstract base class for a key-value store.
      * Can insert, update, get, and remove string keys and values.
@@ -209,11 +202,4 @@ namespace stores {
 
         void _remove(const std::string& key) override;
     };
-
-    /**
-     * Factory to create a Store of the given type.
-     * @param type The type of store to create
-     * @param filepath Where to save the store
-     */
-    std::unique_ptr<Store> getStore(Type type, const std::filesystem::path& filepath);
 }

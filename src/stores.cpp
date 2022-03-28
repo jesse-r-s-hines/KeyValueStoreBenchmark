@@ -1,10 +1,6 @@
 #include <memory>
 #include <filesystem>
 #include <fstream>
-#include <map>
-#include <tuple>
-#include <typeinfo>
-#include <typeindex>
 
 #include "stores.h"
 
@@ -366,43 +362,4 @@ namespace stores {
         // TODO potential improvement, delete empty directories
         fs::remove(getPath(key));
     }
-
-
-
-    /** Maps each Store class to its Enum and a string name. */
-    std::map<std::type_index, std::tuple<Type, string>> storeInfo {
-        {typeid(SQLite3Store), {Type::SQLite3, "SQLite3"}},
-        {typeid(LevelDBStore), {Type::LevelDB, "LevelDB"}},
-        {typeid(RocksDBStore), {Type::RocksDB, "RocksDB"}},
-        {typeid(BerkeleyDBStore), {Type::BerkeleyDB, "BerkeleyDB"}},
-        {typeid(FlatFolderStore), {Type::FlatFolder, "FlatFolder"}},
-        {typeid(NestedFolderStore), {Type::NestedFolder, "NestedFolder"}},
-    };
-    const std::map<Type, std::string> types = []() {
-        std::map<Type, std::string> result;
-        for (auto& [type, info] : storeInfo) result[std::get<0>(info)] = std::get<1>(info);
-        return result;
-    }();
-
-
-    unique_ptr<Store> getStore(Type type, const path& filepath) {
-        switch (type) {
-            case Type::SQLite3:
-                return make_unique<stores::SQLite3Store>(filepath);
-            case Type::LevelDB:
-                return make_unique<stores::LevelDBStore>(filepath);
-            case Type::RocksDB:
-                return make_unique<stores::RocksDBStore>(filepath);
-            case Type::BerkeleyDB:
-                return make_unique<stores::BerkeleyDBStore>(filepath);
-            case Type::FlatFolder:
-                return make_unique<stores::FlatFolderStore>(filepath);
-            case Type::NestedFolder:
-                // using 32 char hash (128) so we don't have to worry about collisions
-                // 3 levels of nesting with 2 chars and a max of 10,000,000 records should have 2 levels with 265
-                // folders and and about 142 files at the lowest level on average.
-                return make_unique<stores::NestedFolderStore>(filepath, 2, 3, 32);
-        }
-        throw std::runtime_error("Unknown type"); // Shouldn't be possible
-    };
 }
