@@ -5,6 +5,7 @@
 #include <memory>
 #include <map>
 #include <string>
+#include <functional>
 
 #define DOCTEST_CONFIG_IMPLEMENT
 #include "doctest/doctest.h"
@@ -16,15 +17,28 @@ namespace tests {
     namespace fs = std::filesystem;
     using fs::path;
     using namespace std::string_literals;
-    using std::string, std::vector, std::map, std::unique_ptr;
+    using std::string, std::vector, std::map, std::function, std::unique_ptr, std::make_unique;
+    using stores::Store;
+
+    const string filepath = path("out") / "tests" / "store";
+
+    vector<function<unique_ptr<Store>()>> storeFactories{
+        [](){ return make_unique<stores::SQLite3Store>(filepath); },
+        [](){ return make_unique<stores::LevelDBStore>(filepath); },
+        [](){ return make_unique<stores::RocksDBStore>(filepath); },
+        [](){ return make_unique<stores::BerkeleyDBStore>(filepath); },
+        [](){ return make_unique<stores::FlatFolderStore>(filepath); },
+        [](){ return make_unique<stores::NestedFolderStore>(filepath, 2, 3, 32); },
+    };
+
 
     TEST_CASE("Test Stores") {
         fs::remove_all("out/tests");
         fs::create_directories("out/tests/");
 
         SUBCASE("Basic") {
-            for (auto& [type, typeName] : stores::types) {
-                auto store = stores::getStore(type, path("out") / "tests" / typeName);
+            for (auto storeFactory : storeFactories) {
+                auto store = storeFactory();
                 string key = utils::randHash(32); 
 
                 store->insert(key, "value");
@@ -42,8 +56,8 @@ namespace tests {
         }
 
         SUBCASE("Nulls") {
-            for (auto& [type, typeName] : stores::types) {
-                auto store = stores::getStore(type, path("out") / "tests" / typeName);
+            for (auto storeFactory : storeFactories) {
+                auto store = storeFactory();
 
                 string key = utils::randHash(32); 
 
@@ -60,14 +74,12 @@ namespace tests {
         fs::remove_all("out/tests");
         fs::create_directories("out/tests/");
 
-        for (auto [type, typeName] : stores::types) {
-            string filepath = path("out") / "tests" / typeName;
-            INFO(filepath);
+        for (auto storeFactory : storeFactories) {
             string key = utils::randHash(32); 
 
-            REQUIRE(!fs::exists(filepath));
+            fs::remove_all(filepath);
             { // create the store, and then close it.
-                auto store = stores::getStore(type, filepath);
+                auto store = storeFactory();
                 REQUIRE(store->filepath == filepath);
 
                 store->insert(key, "value");
@@ -75,7 +87,7 @@ namespace tests {
             REQUIRE(fs::exists(filepath));
 
             {
-                auto store = stores::getStore(type, filepath);
+                auto store = storeFactory();
                 REQUIRE_THROWS(store->get(key)); // We wiped the database
             }
         }
@@ -86,11 +98,8 @@ namespace tests {
         fs::remove_all("out/tests");
         fs::create_directories("out/tests/");
 
-        vector<unique_ptr<stores::Store>> stores{};
-        for (auto [type, typeName] : stores::types)
-            stores.push_back(stores::getStore(type, path("out") / "tests" / typeName));
-
-        for (auto& store : stores) {
+        for (auto& storeFactory : storeFactories) {
+            auto store = storeFactory();
             for (int i = 0; i < 25; i++) {
                 string key = utils::randHash(32);
                 string value = utils::randBlob(64);
