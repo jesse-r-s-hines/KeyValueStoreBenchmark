@@ -21,7 +21,7 @@ namespace fs = std::filesystem;
 using fs::path;
 namespace chrono = std::chrono;
 using namespace std::string_literals;
-using std::string, std::to_string, std::vector, std::pair, std::function;
+using std::string, std::to_string, std::vector, std::pair, std::function, std::make_unique;
 using utils::Range, stores::Store, utils::KiB, utils::MiB, utils::GiB;
 using StorePtr = std::unique_ptr<stores::Store>;
 using Stats = utils::Stats<long long>;
@@ -37,6 +37,8 @@ struct UsagePattern {
 
 /** A callable that generates random data for use as a value in the store */
 using DataGenerator = function<string(Range<size_t>)>;
+/** A callable that creates a new store from (storeType, filepath, pattern). */
+using StoreFactory = function<StorePtr(string, path, const UsagePattern&)>;
 
 /** This class runs the actual benchmark */
 class Benchmark {
@@ -53,6 +55,12 @@ public:
      */
     const size_t maxDbSize;
 
+    /** The names of the stores to compare */
+    const vector<string> storeTypes;
+
+    /** A callable that creates a new store from (storeType, filepath, pattern). */
+    const StoreFactory storeFactory;
+
     /** Size ranges to test [min, max] */
     const vector<Range<size_t>> sizeRanges;
 
@@ -68,10 +76,10 @@ public:
         return utils::genKey(utils::randInt<size_t>(0, store->count() - 1));
     }
 
-    StorePtr initStore(stores::Type type, size_t recordCount, Range<size_t> sizeRange, DataGenerator dataGen) {
-        StorePtr store = getStore(type, storeDir / stores::types.at(type));
-        for (size_t i = 0; i < recordCount; i++) {
-            store->insert(utils::genKey(store->count()), dataGen(sizeRange));
+    StorePtr initStore(string storeType, const UsagePattern& pattern, DataGenerator dataGen) {
+        StorePtr store = storeFactory(storeType, storeDir / storeType, pattern);
+        for (size_t i = 0; i < pattern.count.min; i++) {
+            store->insert(utils::genKey(store->count()), dataGen(pattern.size));
         }
         return store;
     }
@@ -111,7 +119,7 @@ public:
         utils::resetPeakMemUsage();
         size_t baseMemUsage = utils::getPeakMemUsage(); // We'll subtract the base from future measurements
 
-        for (auto [storeType, storeName] : stores::types)
+        for (auto storeType : storeTypes)
         for (auto [dataType, dataGen] : dataTypes)
         for (auto sizeRange : sizeRanges)
         for (auto countRange : countRanges) {
@@ -120,19 +128,19 @@ public:
             size_t avgRecordSize = (sizeRange.min + sizeRange.max) / 2;
             size_t predictedSize = avgRecordSize * std::min(countRange.min + repeats, countRange.max);
             if (predictedSize < maxDbSize) { // Skip combinations that are very large
-                std::cout << storeName << ", " << dataType << ", "
+                std::cout << storeType << ", " << dataType << ", "
                           << utils::prettySize(sizeRange.min) << " to " << utils::prettySize(sizeRange.max) << ", "
                           << countRange.min << " to " << countRange.max << "\n";
 
                 utils::resetPeakMemUsage();
 
-                StorePtr store = initStore(storeType, countRange.min, sizeRange, dataGen);
+                StorePtr store = initStore(storeType, pattern, dataGen);
 
                 Stats insertStats;
                 for (int rep = 0; rep < repeats; rep++) {
                     if (store->count() >= countRange.max) { // on small sizes repeat may be more than size range
                         store.reset(); // close the store first (LevelDB has a lock)
-                        store = initStore(storeType, countRange.min, sizeRange, dataGen);
+                        store = initStore(storeType, pattern, dataGen);
                     }
                     string key = utils::genKey(store->count());
                     string value = dataGen(sizeRange);
@@ -180,17 +188,40 @@ public:
 
                 fs::remove_all(filepath); // Delete the store files
 
-                output << getCSVRow(storeName, "insert", pattern, insertStats);
-                output << getCSVRow(storeName, "update", pattern, updateStats);
-                output << getCSVRow(storeName, "get", pattern, getStats);
-                output << getCSVRow(storeName, "remove", pattern, removeStats);
-                output << getCSVRow(storeName, "memory", pattern, memoryStats);
-                output << getCSVRow(storeName, "space", pattern, spaceStats);
+                output << getCSVRow(storeType, "insert", pattern, insertStats);
+                output << getCSVRow(storeType, "update", pattern, updateStats);
+                output << getCSVRow(storeType, "get", pattern, getStats);
+                output << getCSVRow(storeType, "remove", pattern, removeStats);
+                output << getCSVRow(storeType, "memory", pattern, memoryStats);
+                output << getCSVRow(storeType, "space", pattern, spaceStats);
                 output.flush();
             }
         }
     }
 };
+
+
+StorePtr storeFactory(string storeType, path filepath, const UsagePattern&) {
+    if (storeType == "SQLite3") {
+        return make_unique<stores::SQLite3Store>(filepath);
+    } else if (storeType == "LevelDB") {
+        return make_unique<stores::LevelDBStore>(filepath);
+    } else if (storeType == "RocksDB") {
+        return make_unique<stores::RocksDBStore>(filepath);
+    } else if (storeType == "BerkeleyDB") {
+        return make_unique<stores::BerkeleyDBStore>(filepath);
+    } else if (storeType == "FlatFolder") {
+        return make_unique<stores::FlatFolderStore>(filepath);
+    } else if (storeType == "NestedFolder") {
+        // using 32 char hash (128) so we don't have to worry about collisions
+        // 3 levels of nesting with 2 chars and a max of 10,000,000 records should have 2 levels with 265
+        // folders and and about 142 files at the lowest level on average.
+        return make_unique<stores::NestedFolderStore>(filepath, 2, 3, 32);
+    } else {
+        throw std::runtime_error("Unknown store type "s + storeType);
+    }
+}
+
 
 int main(int argc, char** argv) {
     doctest::Context context;
@@ -214,6 +245,8 @@ int main(int argc, char** argv) {
         "out/stores", // storeDir
         100, // repeats
         10 * GiB, // maxDbSize
+        {"SQLite3", "LevelDB", "RocksDB", "BerkeleyDB", "FlatFolder", "NestedFolder"}, // storeTypes
+        storeFactory, // storeFactory
         { // sizeRanges
             {1, 1*KiB - 1},
             {1*KiB, 10*KiB - 1},
