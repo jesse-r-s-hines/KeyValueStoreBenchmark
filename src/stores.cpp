@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "stores.h"
+#include "leveldb/write_batch.h"
 
 namespace stores {
     namespace fs = std::filesystem;
@@ -198,6 +199,14 @@ namespace stores {
         checkStatus(s);
     }
 
+    void LevelDBStore::_bulkInsert(const vector<pair<string, string>>& items) {
+        // WriteBatch is slightly faster?
+        leveldb::WriteBatch batch;
+        for (auto& [key, value] : items)
+            batch.Put(key, value);
+        leveldb::Status s = db->Write(leveldb::WriteOptions(), &batch);
+        checkStatus(s);
+    }
 
 
     RocksDBStore::RocksDBStore(const path& filepath, rocksdb::Options options) : Store(filepath) {
@@ -239,6 +248,14 @@ namespace stores {
         checkStatus(s);
     }
 
+    void RocksDBStore::_bulkInsert(const vector<pair<string, string>>& items) {
+        // WriteBatch is slightly faster?
+        rocksdb::WriteBatch batch;
+        for (auto& [key, value] : items)
+            batch.Put(key, value);
+        rocksdb::Status s = db->Write(rocksdb::WriteOptions(), &batch);
+        checkStatus(s);
+    }
 
 
     BerkeleyDBStore::BerkeleyDBStore(const path& filepath, DBTYPE dbtype, u_int32_t flags) : Store(filepath), db(NULL, 0) {

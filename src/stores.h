@@ -75,7 +75,7 @@ namespace stores {
 
         void _remove(const std::string& key) override;
 
-        virtual void _bulkInsert(const std::vector<std::pair<std::string, std::string>>& items);
+        virtual void _bulkInsert(const std::vector<std::pair<std::string, std::string>>& items) override;
     };
 
 
@@ -101,6 +101,8 @@ namespace stores {
         std::string _get(const std::string& key) override;
 
         void _remove(const std::string& key) override;
+
+        virtual void _bulkInsert(const std::vector<std::pair<std::string, std::string>>& items) override;
     };
 
 
@@ -126,6 +128,8 @@ namespace stores {
         std::string _get(const std::string& key) override;
 
         void _remove(const std::string& key) override;
+
+        virtual void _bulkInsert(const std::vector<std::pair<std::string, std::string>>& items) override;
     };
 
 
