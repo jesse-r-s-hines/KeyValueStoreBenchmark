@@ -47,6 +47,12 @@ public:
     /** How many iterations of each measurement to do */
     const int repeats;
 
+    /**
+     * Combinations of size and count that would lead to greater than this DB size will be skipped
+     * Does not take compression or spaceEfficiency into account which predicting size
+     */
+    const size_t maxDbSize;
+
     /** Size ranges to test [min, max] */
     const vector<Range<size_t>> sizeRanges;
 
@@ -111,8 +117,9 @@ public:
         for (auto countRange : countRanges) {
             UsagePattern pattern{sizeRange, countRange, dataType};
 
-            double avgRecordSize = (sizeRange.min + sizeRange.max) / 2.0;
-            if (avgRecordSize * countRange.min < (10 * GiB)) { // Skip combinations that are very large
+            size_t avgRecordSize = (sizeRange.min + sizeRange.max) / 2;
+            size_t predictedSize = avgRecordSize * std::min(countRange.min + repeats, countRange.max);
+            if (predictedSize < maxDbSize) { // Skip combinations that are very large
                 std::cout << storeName << ", " << dataType << ", "
                           << utils::prettySize(sizeRange.min) << " to " << utils::prettySize(sizeRange.max) << ", "
                           << countRange.min << " to " << countRange.max << "\n";
@@ -206,6 +213,7 @@ int main(int argc, char** argv) {
     Benchmark benchmark{
         "out/stores", // storeDir
         100, // repeats
+        10 * GiB, // maxDbSize
         { // sizeRanges
             {1, 1*KiB - 1},
             {1*KiB, 10*KiB - 1},
