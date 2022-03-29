@@ -46,6 +46,9 @@ public:
     /** Directory to save the stores */
     path storeDir;
 
+    /** Name of the system the benchmark is running on */
+    string hardware;
+
     /** How many iterations of each measurement to do */
     const int repeats;
 
@@ -101,10 +104,9 @@ public:
         return dataSize;
     }
 
-    inline static const string CSV_HEADER = "store,op,size,records,data type,measurements,sum,min,max,avg\n";
-    static string getCSVRow(const string& store, const string& op, const UsagePattern& pattern, const Stats& stats) {
-        return store + "," +
-            op + "," +
+    inline static const string CSV_HEADER = "hardware,store,op,size,records,data type,measurements,sum,min,max,avg\n";
+    string getCSVRow(const string& store, const string& op, const UsagePattern& pattern, const Stats& stats) {
+        return hardware + "," + store + "," + op + "," +
             utils::prettySize(pattern.size.min) + " to " + utils::prettySize(pattern.size.max + 1) + "," +
             to_string(pattern.count.min) + "," +
             pattern.dataType + "," +
@@ -243,6 +245,10 @@ int main(int argc, char** argv) {
     int res = context.run();
     if(context.shouldExit()) return res;
 
+    string hardware; 
+    std::cout << "Name of the system the benchmark is running on: ";
+    std::cin >> hardware; // Get user input from the keyboard
+
     std::cout << "Starting benchmark...\n";
 
     const std::time_t now = chrono::system_clock::to_time_t(chrono::system_clock::now());
@@ -256,6 +262,7 @@ int main(int argc, char** argv) {
     utils::ClobGenerator randClob{"./randomText"};
     Benchmark benchmark{
         "out/stores", // storeDir
+        hardware, // hardware
         1000, // repeats
         50 * GiB, // maxDbSize
         {"LevelDB", "RocksDB", "BerkeleyDB", "FlatFolder", "NestedFolder", "SQLite3"}, // storeTypes
