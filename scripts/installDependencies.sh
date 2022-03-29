@@ -15,8 +15,8 @@ fi
 # --overlay-ports="./vcpkg_overlay_ports" \
 ./vcpkg/vcpkg install \
     sqlite3 \
-    rocksdb[lz4] \
-    leveldb \
+    rocksdb[snappy] \
+    leveldb[snappy] \
     boost-process \
     boost-uuid \
     doctest \
