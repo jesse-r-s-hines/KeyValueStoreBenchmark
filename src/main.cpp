@@ -136,7 +136,7 @@ public:
             size_t predictedSize = avgRecordSize * std::min(countRange.min + repeats, countRange.max);
             if (predictedSize < maxDbSize) { // Skip combinations that are very large
                 std::cout << storeType << ", " << dataType << ", "
-                          << utils::prettySize(sizeRange.min) << " to " << utils::prettySize(sizeRange.max) << ", "
+                          << utils::prettySize(sizeRange.min) << " to " << utils::prettySize(sizeRange.max + 1) << ", "
                           << countRange.min << " to " << countRange.max << "\n";
 
                 utils::resetPeakMemUsage();
