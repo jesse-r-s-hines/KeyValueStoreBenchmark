@@ -6,8 +6,6 @@ import sys
 import csv
 
 
-
-
 if __name__ == "__main__":
     benchmark = Path(sys.argv[1])
 
@@ -18,35 +16,45 @@ if __name__ == "__main__":
 
     groups = {}
     for row in rows:
+        for field in ["records", "sum", "min", "max", "avg"]:
+            row[field] = int(row[field])
         key = (row["hardware"], row["data type"], row["op"], row["size"], row["records"])
         if key not in groups:
             groups[key] = []
-        for field in ["sum", "min", "max", "avg"]:
-            row[field] = int(row[field])
         groups[key].append(row)
 
-    results = {}
-    threshold = 0.5
-    for key, measurements in groups.items():
-        (hardware, dataType, op, size, records) = key
+    # {hardware: {op: {size: {dataType: {records: [best...]}}}}}
+    matrix = {}
+    threshold = 0.05
+    for (hardware, dataType, op, size, records), measurements in groups.items():
+        rowKey = (hardware, op, size, dataType)
 
         bestFunc = max if op == "space" else min
-
         best = bestFunc(measurements, key = lambda m: m["avg"])["avg"]
         bestList = measurements
         bestList = [m for m in measurements if (1 - threshold) * best < m["avg"] < (1 + threshold) * best]
         bestList = sorted(bestList, key = lambda m: m["avg"], reverse = (bestFunc == max))
 
-        results[key] = bestList
+        if rowKey not in matrix: matrix[rowKey] = {r: [] for r in [100, 1_000, 10_000, 100_000, 1_000_000]}
+        matrix[rowKey][records] = bestList
 
-    (lastHardware, lastDataType, lastOp, lastSize, lastRecords) = [None, None, None, None, None]
-    for pattern, bests in sorted(results.items()):
-        (hardware, dataType, op, size, records) = pattern
-        if (hardware != lastHardware): print(f"{hardware}")
-        if (dataType != lastDataType): print(f"    {dataType}")
-        if (op != lastOp):             print(f"        {op}")
-        if (size != lastSize):         print(f"            {size}")
+    def sortFunc(key):
+        opOrder = ["insert", "update", "get", "remove", "space", "memory"]
+        sizeOrder = ["1B to 1KiB", "1KiB to 10KiB", "10KiB to 100KiB", "100KiB to 1MiB"]
+        dataTypeOrder = ["incompressible", "compressible"]
 
-        print(f"                {records} : " +  " / ".join(f"{b['store']} ({b['avg']})" for b in bests))
+        return (key[0], opOrder.index(key[1]), sizeOrder.index(key[2]), dataTypeOrder.index(key[3]))
 
-        (lastHardware, lastDataType, lastOp, lastSize, lastRecords) = pattern
+    def valToStr(op, val):
+        if op == "space": return f"{val}%"
+        elif op == "memory": return f"{int(round(val / 1024, 0))} MiB"
+        else: return f"{int(round(val / 1000, 0))} μs"
+    
+    output = ""
+    for (hardware, op, size, dataType), row in sorted(matrix.items(), key = lambda k: sortFunc(k[0])):
+        output += f"{hardware},{op},{size},{dataType}"
+        for records, bests in sorted(row.items()):
+            output += "," + " / ".join(f"{b['store']} ({valToStr(op, b['avg'])})" for b in bests)
+        output += "\n"
+
+    print(output, end = "")
