@@ -264,7 +264,7 @@ int main(int argc, char** argv) {
         "out/stores", // storeDir
         hardware, // hardware
         1000, // repeats
-        50 * GiB, // maxDbSize
+        10 * GiB, // maxDbSize
         {"LevelDB", "RocksDB", "BerkeleyDB", "FlatFolder", "NestedFolder", "SQLite3"}, // storeTypes
         storeFactory, // storeFactory
         { // sizeRanges
