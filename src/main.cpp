@@ -216,13 +216,13 @@ StorePtr storeFactory(string storeType, path filepath, const UsagePattern& patte
         options.compression = (pattern.dataType == "compressible") ?
             leveldb::CompressionType::kSnappyCompression :
             leveldb::CompressionType::kNoCompression;
-        return make_unique<stores::LevelDBStore>(filepath);
+        return make_unique<stores::LevelDBStore>(filepath, options); // TODO
     } else if (storeType == "RocksDB") {
         rocksdb::Options options;
         options.compression = (pattern.dataType == "compressible") ?
             rocksdb::CompressionType::kSnappyCompression :
             rocksdb::CompressionType::kNoCompression;
-        return make_unique<stores::RocksDBStore>(filepath);
+        return make_unique<stores::RocksDBStore>(filepath, options);
     } else if (storeType == "BerkeleyDB") {
         return make_unique<stores::BerkeleyDBStore>(filepath);
     } else if (storeType == "FlatFolder") {
