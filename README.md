@@ -15,4 +15,4 @@ The results of the benchmark in CSV format and an Excel spreadsheet that imports
 # Acknowledgements
 The project was done with the assistance of [Nicholas Cunningham](https://github.com/thaamazingone), [Jesse Hines](https://github.com/jesse-r-s-hines), and [Germán H. Alférez](http://harveyalferez.com)
 
-Thank you to [Southern Adventist University](southern.edu) as well. 
+Thank you to [Southern Adventist University](https://www.southern.edu) as well. 
