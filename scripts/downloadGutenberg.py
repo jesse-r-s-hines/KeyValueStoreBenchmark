@@ -1,25 +1,21 @@
 #!/usr/bin/env python3
 # Install dependencies:
-#   python3 -m pip gutenbergpy
+#   python3 -m pip install gutenberg
 
-import random, os, re, shutil, sys
+import random
+import os
+import shutil
+import sys
 from pathlib import Path
-from gutenbergpy.gutenbergcache import GutenbergCache
-from gutenbergpy import textget
+from gutenberg.acquire import load_etext
+from gutenberg.cleanup import strip_headers
 
 def fetch_random_books(dest, count):
     dest = Path(dest).resolve()
     (dest / "cache").mkdir(exist_ok=True, parents=True)
     os.chdir(dest / "cache")
 
-    if not GutenbergCache.exists():
-        # This is a one-time thing per machine
-        GutenbergCache.create()
-    cache = GutenbergCache.get_cache()
-
     downloaded_books = [int(p.stem) for p in dest.glob("*.txt")] # Get already downloaded books
-    all_books = cache.query(downloadtype = ['text/plain'], languages = ['en'])
-    all_books = list(set(all_books) - set(downloaded_books))
 
     if len(downloaded_books) > count:  # Delete books if more than count
         while len(downloaded_books) > count:
@@ -28,14 +24,14 @@ def fetch_random_books(dest, count):
             (dest / f"{book_id}.txt").unlink()
     else:
         while len(downloaded_books) < count:
-            book_id = random.choice(all_books)
-            all_books.remove(book_id)
+            book_id = random.randint(1, 60000)  # Generate a random book ID
+            if book_id in downloaded_books:
+                continue
 
             try:
-                text = textget.get_text_by_id(book_id)
+                text = strip_headers(load_etext(book_id)).strip() + "\n"
             except:
                 continue # Some of them seem to just fail, so download another.
-            text = textget.strip_headers(text).decode().strip() + "\n"
 
             downloaded_books.append(book_id)
             (dest / f"{book_id}.txt").write_text(text)

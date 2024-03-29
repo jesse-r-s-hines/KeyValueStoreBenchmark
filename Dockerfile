@@ -1,7 +1,6 @@
-FROM ubuntu:21.10 as base
+FROM ubuntu as base
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get -y upgrade
-
+RUN apt-get update && apt-get install -y git
 
 FROM base as builder
 RUN apt-get install -y curl zip unzip tar pkg-config wget
@@ -12,11 +11,12 @@ RUN python3 -m pip install gutenbergpy
 WORKDIR /benchmark
 
 COPY ./scripts/installDependencies.sh ./scripts/downloadGutenberg.py ./scripts/
+RUN chmod +x ./scripts/installDependencies.sh
 # COPY ./vcpkg_overlay_ports ./vcpkg_overlay_ports
 RUN ./scripts/installDependencies.sh
 
 COPY . .
-RUN ./scripts/build.sh
+RUN chmod +x ./scripts/build.sh
 
 
 FROM base as benchmark

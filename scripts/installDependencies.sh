@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 PROJ_ROOT="$(realpath $(dirname $(dirname "$0")))"
 cd "$PROJ_ROOT"
 set -e
@@ -21,22 +21,22 @@ fi
     boost-uuid \
     doctest \
 
-if [ ! -d "build/berkeleydb" ]; then
-    mkdir -p build
-    cd build
-    wget https://download.oracle.com/berkeley-db/db-18.1.40.zip
-    unzip db-18.1.40.zip
-    BERKELEYDB_SRC="$PROJ_ROOT/build/db-18.1.40"
+# if [ ! -d "build/berkeleydb" ]; then
+#     mkdir -p build
+#     cd build
+#     wget https://download.oracle.com/berkeley-db/db-18.1.40.zip
+#     unzip db-18.1.40.zip
+#     BERKELEYDB_SRC="$PROJ_ROOT/build/db-18.1.40"
 
-    cd db-18.1.40/build_unix
-    ../dist/configure --prefix="$PROJ_ROOT/build/berkeleydb/" --enable-cxx --enable-stl --with-repmgr-ssl=no
-    make
-    # workaround https://stackoverflow.com/questions/64707079/berkeley-db-make-install-fails-on-linux
-    mkdir -p "$BERKELEYDB_SRC/docs/bdb-sql" "$BERKELEYDB_SRC/docs/gsg_db_server"
-    make install
+#     cd db-18.1.40/build_unix
+#     ../dist/configure --prefix="$PROJ_ROOT/build/berkeleydb/" --enable-cxx --enable-stl --with-repmgr-ssl=no
+#     make
+#     # workaround https://stackoverflow.com/questions/64707079/berkeley-db-make-install-fails-on-linux
+#     mkdir -p "$BERKELEYDB_SRC/docs/bdb-sql" "$BERKELEYDB_SRC/docs/gsg_db_server"
+#     make install
 
-    cd "$PROJ_ROOT"
-fi
+#     cd "$PROJ_ROOT"
+# fi
 
 # How to install BerkeleyDB in CMake
 # if(NOT EXISTS ${CMAKE_BINARY_DIR}/berkeleydb/lib)
@@ -67,4 +67,5 @@ fi
 #     endif()
 # endif()
 
-./scripts/downloadGutenberg.py
+chmod u+x ./scripts/downloadGutenberg.py
+# chmod u+x ./scripts/downloadGutenberg.r
